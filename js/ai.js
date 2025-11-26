@@ -1,7 +1,8 @@
 class AI {
-    constructor() {
+    constructor(editor) {
         this.apiKey = localStorage.getItem(CONFIG.STORAGE_KEY_API_KEY) || '';
         this.history = [];
+        this.editor = editor;
     }
 
     setApiKey(key) {
@@ -34,6 +35,15 @@ class AI {
             { role: 'system', content: CONFIG.SYSTEM_PROMPT },
             ...this.history
         ];
+
+        // Include the current editor content so the AI works against the live code
+        const currentCode = this.editor?.getValue ? this.editor.getValue() : '';
+        if (currentCode) {
+            messages.push({
+                role: 'system',
+                content: `Current Editor Content:\n${currentCode}\n\nRefuse to output markdown wrappers. Output only code.`
+            });
+        }
 
         try {
             const response = await fetch(CONFIG.API_URL, {

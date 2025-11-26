@@ -19,16 +19,58 @@ class Editor {
         });
 
         this.currentMode = 'html';
-        this.buffers = {
+        this.storageKey = 'ai-web-studio-buffers';
+
+        // Load buffers from localStorage or use empty defaults
+        this.buffers = this.loadFromStorage() || {
             html: '',
             three: '',
             python: ''
         };
 
-        // Save content on change
+        // Restore the HTML buffer content on initial load
+        if (this.buffers.html) {
+            this.cm.setValue(this.buffers.html);
+        }
+
+        // Save content on change with debounce
+        this.saveTimeout = null;
         this.cm.on('change', () => {
             this.buffers[this.currentMode] = this.cm.getValue();
+            this.debouncedSave();
         });
+    }
+
+    // Load buffers from localStorage
+    loadFromStorage() {
+        try {
+            const saved = localStorage.getItem(this.storageKey);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (err) {
+            console.warn('Failed to load from localStorage:', err);
+        }
+        return null;
+    }
+
+    // Save buffers to localStorage
+    saveToStorage() {
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify(this.buffers));
+        } catch (err) {
+            console.warn('Failed to save to localStorage:', err);
+        }
+    }
+
+    // Debounced save to avoid excessive writes
+    debouncedSave() {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        this.saveTimeout = setTimeout(() => {
+            this.saveToStorage();
+        }, 500);
     }
 
     getValue() {

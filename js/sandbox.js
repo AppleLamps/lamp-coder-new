@@ -3,8 +3,112 @@ class Sandbox {
         this.iframe = document.getElementById(iframeId);
         this.pythonOutput = document.getElementById('python-output');
         this.loadingOverlay = document.getElementById('preview-loading');
+        this.jsConsolePanel = document.getElementById('js-console-panel');
+        this.jsConsoleOutput = document.getElementById('js-console-output');
         this.pyodide = null;
         this.pyodideReady = false;
+
+        // Listen for console messages from iframe
+        window.addEventListener('message', (event) => this.handleConsoleMessage(event));
+
+        // Console panel controls
+        document.getElementById('clear-console-btn').addEventListener('click', () => this.clearConsole());
+        document.getElementById('toggle-console-btn').addEventListener('click', () => this.toggleConsole());
+    }
+
+    // Console capture script to inject into iframe
+    getConsoleCapture() {
+        return `
+<script>
+(function() {
+    const originalConsole = {
+        log: console.log.bind(console),
+        error: console.error.bind(console),
+        warn: console.warn.bind(console),
+        info: console.info.bind(console)
+    };
+
+    function sendToParent(type, args) {
+        const message = Array.from(args).map(arg => {
+            if (typeof arg === 'object') {
+                try { return JSON.stringify(arg, null, 2); }
+                catch { return String(arg); }
+            }
+            return String(arg);
+        }).join(' ');
+
+        window.parent.postMessage({ type: 'console', level: type, message: message }, '*');
+    }
+
+    console.log = function(...args) { originalConsole.log(...args); sendToParent('log', args); };
+    console.error = function(...args) { originalConsole.error(...args); sendToParent('error', args); };
+    console.warn = function(...args) { originalConsole.warn(...args); sendToParent('warn', args); };
+    console.info = function(...args) { originalConsole.info(...args); sendToParent('info', args); };
+
+    window.onerror = function(msg, url, line, col, error) {
+        const errorMsg = error ? error.stack || msg : msg;
+        window.parent.postMessage({ type: 'console', level: 'error', message: 'Error: ' + errorMsg + ' (line ' + line + ')' }, '*');
+        return false;
+    };
+
+    window.addEventListener('unhandledrejection', function(event) {
+        window.parent.postMessage({ type: 'console', level: 'error', message: 'Unhandled Promise Rejection: ' + event.reason }, '*');
+    });
+})();
+</script>`;
+    }
+
+    handleConsoleMessage(event) {
+        if (event.data && event.data.type === 'console') {
+            this.showConsole();
+            this.appendConsoleEntry(event.data.level, event.data.message);
+        }
+    }
+
+    appendConsoleEntry(level, message) {
+        const colors = {
+            log: 'text-gray-300',
+            info: 'text-blue-400',
+            warn: 'text-yellow-400',
+            error: 'text-red-400'
+        };
+        const icons = {
+            log: 'fa-circle',
+            info: 'fa-circle-info',
+            warn: 'fa-triangle-exclamation',
+            error: 'fa-circle-xmark'
+        };
+
+        const entry = document.createElement('div');
+        entry.className = `flex items-start gap-2 ${colors[level] || 'text-gray-300'}`;
+        entry.innerHTML = `
+            <i class="fa-solid ${icons[level] || 'fa-circle'} text-[8px] mt-1 opacity-60"></i>
+            <pre class="whitespace-pre-wrap break-all flex-1">${this.escapeHtml(message)}</pre>
+        `;
+        this.jsConsoleOutput.appendChild(entry);
+        this.jsConsoleOutput.scrollTop = this.jsConsoleOutput.scrollHeight;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    showConsole() {
+        this.jsConsolePanel.classList.remove('hidden');
+    }
+
+    hideConsole() {
+        this.jsConsolePanel.classList.add('hidden');
+    }
+
+    toggleConsole() {
+        this.jsConsolePanel.classList.toggle('hidden');
+    }
+
+    clearConsole() {
+        this.jsConsoleOutput.innerHTML = '';
     }
 
     async initPyodide() {
@@ -13,7 +117,8 @@ class Sandbox {
         try {
             this.showLoading(true);
             this.pyodide = await loadPyodide();
-            await this.pyodide.loadPackage(["numpy", "matplotlib"]);
+            await this.pyodide.loadPackage(["numpy", "matplotlib", "micropip"]);
+            this.installedPackages = new Set(['numpy', 'matplotlib']);
             this.pyodideReady = true;
             console.log("Pyodide loaded");
         } catch (err) {
@@ -21,6 +126,43 @@ class Sandbox {
         } finally {
             this.showLoading(false);
         }
+    }
+
+    async installPackage(packageName) {
+        if (!packageName || !packageName.trim()) {
+            return { success: false, message: 'Please enter a package name' };
+        }
+
+        packageName = packageName.trim().toLowerCase();
+
+        if (this.installedPackages && this.installedPackages.has(packageName)) {
+            return { success: false, message: `${packageName} is already installed` };
+        }
+
+        if (!this.pyodideReady) {
+            await this.initPyodide();
+        }
+
+        try {
+            // Use micropip to install from PyPI
+            await this.pyodide.runPythonAsync(`
+import micropip
+await micropip.install('${packageName}')
+            `);
+
+            if (!this.installedPackages) {
+                this.installedPackages = new Set(['numpy', 'matplotlib']);
+            }
+            this.installedPackages.add(packageName);
+
+            return { success: true, message: `Successfully installed ${packageName}` };
+        } catch (err) {
+            return { success: false, message: `Failed to install ${packageName}: ${err.message}` };
+        }
+    }
+
+    getInstalledPackages() {
+        return this.installedPackages ? Array.from(this.installedPackages) : ['numpy', 'matplotlib'];
     }
 
     showLoading(show) {
@@ -44,16 +186,31 @@ class Sandbox {
     renderHTML(code) {
         this.pythonOutput.classList.add('hidden');
         this.iframe.classList.remove('hidden');
+        this.clearConsole();
+
+        // Inject console capture script into the HTML
+        let modifiedCode = code;
+        const consoleScript = this.getConsoleCapture();
+
+        // Insert after <head> or at start of document
+        if (modifiedCode.includes('<head>')) {
+            modifiedCode = modifiedCode.replace('<head>', '<head>' + consoleScript);
+        } else if (modifiedCode.includes('<html>')) {
+            modifiedCode = modifiedCode.replace('<html>', '<html><head>' + consoleScript + '</head>');
+        } else {
+            modifiedCode = consoleScript + modifiedCode;
+        }
 
         const doc = this.iframe.contentWindow.document;
         doc.open();
-        doc.write(code);
+        doc.write(modifiedCode);
         doc.close();
     }
 
     renderThreeJS(code) {
         this.pythonOutput.classList.add('hidden');
         this.iframe.classList.remove('hidden');
+        this.clearConsole();
 
         // Sanitize code to prevent script injection
         const sanitizedCode = code
@@ -67,6 +224,7 @@ class Sandbox {
 <head>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; script-src 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
     <style>body { margin: 0; overflow: hidden; }</style>
+    ${this.getConsoleCapture()}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>

@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize modules
-    const ai = new AI();
     const editor = new Editor('code-editor');
+    window.editor = editor; // Expose for resizer to refresh CodeMirror
+
+    const ai = new AI(editor);
     const sandbox = new Sandbox('preview-frame');
     const ui = new UI(ai, editor, sandbox);
+    const resizer = new PanelResizer();
 
     // Initial setup
     // Load a default template or welcome message?

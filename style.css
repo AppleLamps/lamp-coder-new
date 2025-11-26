@@ -27,8 +27,15 @@
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .message-enter {
@@ -68,4 +75,54 @@
     list-style-type: decimal;
     padding-left: 1.25rem;
     margin-bottom: 0.5rem;
+}
+
+/* Panel Resizers */
+.resizer {
+    width: 6px;
+    background: #374151;
+    cursor: col-resize;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease;
+}
+
+.resizer:hover,
+.resizer.active {
+    background: #3b82f6;
+}
+
+.resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 30px;
+    background: #6b7280;
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.resizer:hover::after,
+.resizer.active::after {
+    opacity: 1;
+    background: white;
+}
+
+/* Prevent text selection while resizing */
+body.resizing {
+    cursor: col-resize !important;
+    user-select: none;
+}
+
+body.resizing * {
+    cursor: col-resize !important;
+}
+
+body.resizing iframe {
+    pointer-events: none;
 }
