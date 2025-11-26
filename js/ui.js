@@ -894,43 +894,92 @@ class UI {
     }
 
     clearAll() {
-        if (!confirm('Clear everything? This will reset the editor, chat history, and preview.')) {
-            return;
-        }
+        this.showConfirmModal({
+            title: 'Clear Everything?',
+            message: 'This will reset the editor, chat history, and preview. This action cannot be undone.',
+            confirmText: 'Clear All',
+            onConfirm: () => {
+                // Clear editor
+                this.editor.setValue('');
+                this.editor.undoStack = [];
 
-        // Clear editor
-        this.editor.setValue('');
-        this.editor.undoStack = [];
+                // Clear chat history
+                this.ai.clearHistory();
+                const chatHistory = document.getElementById('chat-history');
+                chatHistory.innerHTML = `
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 shadow-sm">
+                            <i class="fa-solid fa-robot text-xs text-white"></i>
+                        </div>
+                        <div class="bg-white border border-gray-200 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 shadow-sm">
+                            Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts.
+                            What would you like to build today?
+                        </div>
+                    </div>
+                `;
 
-        // Clear chat history
-        this.ai.clearHistory();
-        const chatHistory = document.getElementById('chat-history');
-        chatHistory.innerHTML = `
-            <div class="flex gap-3">
-                <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 shadow-sm">
-                    <i class="fa-solid fa-robot text-xs text-white"></i>
-                </div>
-                <div class="bg-white border border-gray-200 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 shadow-sm">
-                    Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts.
-                    What would you like to build today?
-                </div>
-            </div>
-        `;
+                // Clear preview
+                const iframe = document.getElementById('preview-frame');
+                iframe.srcdoc = '';
 
-        // Clear preview
-        const iframe = document.getElementById('preview-frame');
-        iframe.srcdoc = '';
+                // Clear any attached image
+                this.removeImage();
 
-        // Clear any attached image
-        this.removeImage();
+                // Reset undo button
+                this.updateUndoButton();
 
-        // Reset undo button
-        this.updateUndoButton();
+                // Show welcome chips again
+                this.renderWelcomeScreen();
 
-        // Show welcome chips again
-        this.renderWelcomeScreen();
+                this.showNotification('Everything cleared', 'success');
+            }
+        });
+    }
 
-        this.showNotification('Everything cleared', 'success');
+    // Show a custom confirmation modal
+    showConfirmModal({ title, message, confirmText = 'Confirm', cancelText = 'Cancel', onConfirm, onCancel }) {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-modal-title');
+        const messageEl = document.getElementById('confirm-modal-message');
+        const confirmBtn = document.getElementById('confirm-modal-confirm');
+        const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+        // Set content
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        confirmBtn.textContent = confirmText;
+        cancelBtn.textContent = cancelText;
+
+        // Show modal
+        modal.classList.remove('hidden');
+
+        // Remove old listeners by cloning buttons
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+        // Handle confirm
+        newConfirmBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            if (onConfirm) onConfirm();
+        });
+
+        // Handle cancel
+        newCancelBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            if (onCancel) onCancel();
+        });
+
+        // Close on backdrop click
+        const handleBackdropClick = (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                if (onCancel) onCancel();
+                modal.removeEventListener('click', handleBackdropClick);
+            }
+        };
+        modal.addEventListener('click', handleBackdropClick);
     }
 
     popoutPreview() {

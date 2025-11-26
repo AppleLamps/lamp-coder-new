@@ -27,11 +27,12 @@
     background-color: rgba(107, 114, 128, 0.6);
 }
 
-/* Firefox scrollbar */
+/* Firefox scrollbar (progressive enhancement - unsupported browsers use WebKit scrollbar above) */
+/* stylelint-disable-next-line property-no-unknown */
 .scrollbar-thin,
 .CodeMirror-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+    scrollbar-width: thin; /* stylelint-disable-line */
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent; /* stylelint-disable-line */
 }
 
 /* Editor container */
@@ -215,8 +216,8 @@
 /* Prevent text selection while resizing */
 body.resizing {
     cursor: col-resize !important;
-    user-select: none;
     -webkit-user-select: none;
+    user-select: none;
 }
 
 body.resizing * {
