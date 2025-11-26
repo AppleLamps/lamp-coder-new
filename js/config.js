@@ -6,6 +6,8 @@ const CONFIG = {
     MODELS: [
         { id: 'openai/gpt-4.1', name: 'GPT-4.1', provider: 'OpenAI', vision: true, description: 'Latest GPT-4 with vision' },
         { id: 'openai/gpt-5.1', name: 'GPT-5.1', provider: 'OpenAI', vision: true, description: 'Most capable model' },
+        { id: 'openai/gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'OpenAI', vision: true, description: 'Advanced coding model' },
+        { id: 'openai/gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'OpenAI', vision: true, description: 'Lightweight coding model' },
         { id: 'x-ai/grok-4-fast', name: 'Grok 4 Fast', provider: 'xAI', vision: true, description: 'Fast & powerful' },
         { id: 'x-ai/grok-code-fast-1', name: 'Grok Code Fast', provider: 'xAI', vision: false, description: 'Optimized for coding' },
         { id: 'tngtech/deepseek-r1t2-chimera:free', name: 'DeepSeek R1T2 Chimera', provider: 'TNG', vision: false, description: 'Free reasoning model', free: true },
