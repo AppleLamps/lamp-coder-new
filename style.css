@@ -1,20 +1,42 @@
-/* Custom Scrollbar - Light Theme */
-.scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+/* Custom Scrollbar - Light Theme (Subtle) */
+.scrollbar-thin::-webkit-scrollbar,
+.CodeMirror-vscrollbar::-webkit-scrollbar,
+.CodeMirror-hscrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-    background: #f3f4f6;
+.scrollbar-thin::-webkit-scrollbar-track,
+.CodeMirror-vscrollbar::-webkit-scrollbar-track,
+.CodeMirror-hscrollbar::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-    border-radius: 3px;
+.scrollbar-thin::-webkit-scrollbar-thumb,
+.CodeMirror-vscrollbar::-webkit-scrollbar-thumb,
+.CodeMirror-hscrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.4);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #9ca3af;
+.scrollbar-thin::-webkit-scrollbar-thumb:hover,
+.CodeMirror-vscrollbar::-webkit-scrollbar-thumb:hover,
+.CodeMirror-hscrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.6);
+}
+
+/* Firefox scrollbar */
+.scrollbar-thin,
+.CodeMirror-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+/* Editor container */
+#editor-panel .flex-1 {
+    overflow: hidden;
 }
 
 /* CodeMirror Overrides - Light Theme */
@@ -24,7 +46,12 @@
     font-size: 14px;
     line-height: 1.5;
     background-color: #ffffff;
-    border: 1px solid #e5e7eb;
+    border: none;
+}
+
+.CodeMirror-scroll {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
 }
 
 .CodeMirror-gutters {
@@ -34,6 +61,12 @@
 
 .CodeMirror-linenumber {
     color: #9ca3af;
+}
+
+/* Hide native scrollbars in CodeMirror and use custom ones */
+.CodeMirror-vscrollbar,
+.CodeMirror-hscrollbar {
+    outline: none;
 }
 
 /* Animations */

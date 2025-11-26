@@ -358,13 +358,38 @@ class UI {
             this.pendingImageDataUrl = null;
         }
 
-        this.setLoading(true);
+        this.setLoading(true, 'Thinking...');
 
         try {
             // Save current state for undo before AI overwrites
             this.editor.saveForUndo();
 
-            const code = await this.ai.generateCode(prompt, this.currentMode);
+            let isFirstChunk = true;
+            let lastPreviewUpdate = 0;
+            const previewThrottle = 500; // Update preview every 500ms during streaming
+
+            // Streaming callback - updates editor live as code comes in
+            const onChunk = (chunk, fullContent) => {
+                if (isFirstChunk) {
+                    this.setLoading(true, 'Generating code...');
+                    isFirstChunk = false;
+                }
+
+                // Try to extract code from partial JSON for live preview
+                const partialCode = this.extractPartialCode(fullContent);
+                if (partialCode) {
+                    this.editor.setValue(partialCode);
+
+                    // Throttle preview updates during streaming
+                    const now = Date.now();
+                    if (now - lastPreviewUpdate > previewThrottle) {
+                        this.sandbox.updatePreview(partialCode, this.currentMode);
+                        lastPreviewUpdate = now;
+                    }
+                }
+            };
+
+            const code = await this.ai.generateCode(prompt, this.currentMode, onChunk);
             this.appendMessage('assistant', "I've generated the code for you. Check the editor!");
 
             this.editor.setValue(code);
@@ -377,6 +402,64 @@ class UI {
         } finally {
             this.setLoading(false);
         }
+    }
+
+    // Extract code from partial/streaming JSON response
+    extractPartialCode(content) {
+        // Try to find code in the partial JSON
+        // The format is: {"thinking":"...","code":"...","changes_made":...}
+
+        // Look for "code":" and extract everything after it
+        const codeMatch = content.match(/"code"\s*:\s*"/);
+        if (!codeMatch) return null;
+
+        const codeStart = codeMatch.index + codeMatch[0].length;
+        let code = content.slice(codeStart);
+
+        // Find where the code string ends (look for unescaped quote followed by comma or closing brace)
+        // This is tricky because the code itself might contain quotes
+        let depth = 0;
+        let inString = true;
+        let endIndex = -1;
+
+        for (let i = 0; i < code.length; i++) {
+            const char = code[i];
+            const prevChar = i > 0 ? code[i - 1] : '';
+
+            if (char === '\\') {
+                i++; // Skip escaped character
+                continue;
+            }
+
+            if (char === '"' && prevChar !== '\\') {
+                if (inString) {
+                    // Check if this might be the end of the code string
+                    const remaining = code.slice(i + 1).trim();
+                    if (remaining.startsWith(',') || remaining.startsWith('}')) {
+                        endIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (endIndex > 0) {
+            code = code.slice(0, endIndex);
+        }
+
+        // Unescape the JSON string
+        try {
+            code = JSON.parse('"' + code + '"');
+        } catch (e) {
+            // If parsing fails, try basic unescaping
+            code = code
+                .replace(/\\n/g, '\n')
+                .replace(/\\t/g, '\t')
+                .replace(/\\"/g, '"')
+                .replace(/\\\\/g, '\\');
+        }
+
+        return code || null;
     }
 
     appendMessage(role, content) {
@@ -400,14 +483,29 @@ class UI {
         history.scrollTop = history.scrollHeight;
     }
 
-    setLoading(loading) {
+    setLoading(loading, statusMessage = null) {
         const btn = document.getElementById('send-btn');
+        const statusEl = document.getElementById('streaming-status');
+
         if (loading) {
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btn.disabled = true;
+
+            // Show status message if provided
+            if (statusEl) {
+                if (statusMessage) {
+                    statusEl.querySelector('span').textContent = statusMessage;
+                    statusEl.classList.remove('hidden');
+                }
+            }
         } else {
             btn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i>';
             btn.disabled = false;
+
+            // Hide status message
+            if (statusEl) {
+                statusEl.classList.add('hidden');
+            }
         }
     }
 

@@ -198,6 +198,11 @@
                         </button>
                     </div>
                 </div>
+                <!-- Streaming Status -->
+                <div id="streaming-status" class="hidden text-xs text-gray-500 mt-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-notch fa-spin text-gray-400"></i>
+                    <span>Thinking...</span>
+                </div>
             </div>
         </section>
 
@@ -241,7 +246,7 @@
                     </button>
                 </div>
             </div>
-            <div class="flex-1 relative bg-white">
+            <div class="flex-1 relative bg-white overflow-hidden">
                 <textarea id="code-editor" class="hidden"></textarea>
             </div>
         </section>

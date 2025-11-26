@@ -11,6 +11,8 @@ class Editor {
             autoCloseTags: true,
             autoCloseBrackets: true,
             matchBrackets: true,
+            scrollbarStyle: 'native',
+            viewportMargin: Infinity,
             extraKeys: {
                 "Ctrl-Space": "autocomplete",
                 "Ctrl-Z": "undo",

@@ -114,7 +114,7 @@ class AI {
         this.history = [];
     }
 
-    async generateCode(userPrompt, currentMode) {
+    async generateCode(userPrompt, currentMode, onChunk = null) {
         if (!this.apiKey) {
             throw new Error("API Key is missing. Please set it in Settings.");
         }
@@ -172,7 +172,8 @@ class AI {
                 body: JSON.stringify({
                     model: this.currentModel,
                     messages: messages,
-                    response_format: this.codeResponseSchema
+                    response_format: this.codeResponseSchema,
+                    stream: true
                 })
             });
 
@@ -181,11 +182,11 @@ class AI {
                 throw new Error(errorData.error?.message || 'API request failed');
             }
 
-            const data = await response.json();
-            const aiContent = data.choices[0].message.content;
+            // Handle streaming response
+            const fullContent = await this.handleStreamingResponse(response, onChunk);
 
             // Parse the structured JSON response
-            const parsedResponse = this.parseStructuredResponse(aiContent);
+            const parsedResponse = this.parseStructuredResponse(fullContent);
 
             // Add assistant response to history (just the code for brevity)
             this.addToHistory('assistant', `Generated code with changes: ${parsedResponse.changes_made.join(', ')}`);
@@ -201,6 +202,58 @@ class AI {
             console.error('AI Generation Error:', error);
             throw error;
         }
+    }
+
+    async handleStreamingResponse(response, onChunk) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE messages
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+
+                    if (data === '[DONE]') continue;
+
+                    try {
+                        const parsed = JSON.parse(data);
+
+                        // Check for errors in chunk
+                        if (parsed.error) {
+                            throw new Error(parsed.error.message || 'Stream error');
+                        }
+
+                        const content = parsed.choices?.[0]?.delta?.content;
+                        if (content) {
+                            fullContent += content;
+
+                            // Call the chunk callback for live updates
+                            if (onChunk) {
+                                onChunk(content, fullContent);
+                            }
+                        }
+                    } catch (e) {
+                        // Skip invalid JSON lines (like empty data)
+                        if (data.trim() && !data.includes('[DONE]')) {
+                            console.warn('Failed to parse SSE chunk:', data);
+                        }
+                    }
+                }
+            }
+        }
+
+        return fullContent;
     }
 
     buildStructuredPrompt(userPrompt, currentMode, currentCode, declaredIdentifiers) {
