@@ -190,6 +190,13 @@ await micropip.install('${packageName}')
         this.iframe.classList.remove('hidden');
         this.clearConsole();
 
+        // Pre-validate JavaScript in script tags for common errors
+        const jsValidation = this.validateJavaScript(code);
+        if (!jsValidation.valid) {
+            this.showConsole();
+            this.appendConsoleEntry('error', `⚠️ Pre-run validation error: ${jsValidation.error}\n\nTip: Use the "Undo AI Change" button to revert.`);
+        }
+
         // Inject console capture script into the HTML
         let modifiedCode = code;
         const consoleScript = this.getConsoleCapture();
@@ -207,6 +214,35 @@ await micropip.install('${packageName}')
         doc.open();
         doc.write(modifiedCode);
         doc.close();
+    }
+
+    // Validate JavaScript code for common errors (duplicate declarations, etc.)
+    validateJavaScript(htmlCode) {
+        // Extract all script content
+        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+        let allJs = '';
+        let match;
+        while ((match = scriptRegex.exec(htmlCode)) !== null) {
+            allJs += match[1] + '\n';
+        }
+
+        if (!allJs.trim()) return { valid: true };
+
+        // Check for duplicate const/let declarations
+        const declarations = {};
+        const declRegex = /\b(const|let)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+        while ((match = declRegex.exec(allJs)) !== null) {
+            const [, keyword, identifier] = match;
+            if (declarations[identifier]) {
+                return {
+                    valid: false,
+                    error: `Duplicate '${keyword}' declaration: '${identifier}' is already declared. The AI may have accidentally duplicated this variable.`
+                };
+            }
+            declarations[identifier] = keyword;
+        }
+
+        return { valid: true };
     }
 
     renderThreeJS(code) {

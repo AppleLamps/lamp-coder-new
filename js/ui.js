@@ -63,9 +63,14 @@ class UI {
             { label: 'Data Plot', prompt: 'Create a sine wave plot with matplotlib', mode: 'python' }
         ];
 
+        // Image attachment state
+        this.pendingImageDataUrl = null;
+
         this.initEventListeners();
         this.renderTemplates();
         this.renderWelcomeScreen();
+        this.renderModelList();
+        this.updateModelDisplay();
 
         // Check for API key
         if (!this.ai.getApiKey()) {
@@ -86,6 +91,23 @@ class UI {
         // Voice Input
         this.initVoiceRecognition();
         document.getElementById('voice-btn').addEventListener('click', () => this.toggleVoiceRecognition());
+
+        // Model Selector
+        document.getElementById('model-selector-btn').addEventListener('click', () => {
+            document.getElementById('model-modal').classList.remove('hidden');
+        });
+        document.getElementById('close-model-btn').addEventListener('click', () => {
+            document.getElementById('model-modal').classList.add('hidden');
+        });
+        document.getElementById('model-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'model-modal') {
+                document.getElementById('model-modal').classList.add('hidden');
+            }
+        });
+
+        // Image Upload
+        document.getElementById('image-upload').addEventListener('change', (e) => this.handleImageUpload(e));
+        document.getElementById('remove-image-btn').addEventListener('click', () => this.removeImage());
 
         // Mode Switching
         document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -117,6 +139,11 @@ class UI {
         // Download
         document.getElementById('download-btn').addEventListener('click', () => {
             this.downloadCode();
+        });
+
+        // Clear All
+        document.getElementById('clear-all-btn').addEventListener('click', () => {
+            this.clearAll();
         });
 
         // Auto-run toggle
@@ -319,7 +346,18 @@ class UI {
         if (welcomeChips) welcomeChips.remove();
 
         input.value = '';
-        this.appendMessage('user', prompt);
+
+        // Check if there's an attached image
+        const hasImage = this.ai.hasImage();
+        this.appendMessage('user', prompt + (hasImage ? ' <span class="text-xs text-gray-400 ml-1"><i class="fa-solid fa-image"></i> image attached</span>' : ''));
+
+        // Clear image preview after sending
+        if (hasImage) {
+            document.getElementById('image-preview-container').classList.add('hidden');
+            document.getElementById('image-upload').value = '';
+            this.pendingImageDataUrl = null;
+        }
+
         this.setLoading(true);
 
         try {
@@ -699,6 +737,46 @@ class UI {
         }
     }
 
+    clearAll() {
+        if (!confirm('Clear everything? This will reset the editor, chat history, and preview.')) {
+            return;
+        }
+
+        // Clear editor
+        this.editor.setValue('');
+        this.editor.undoStack = [];
+
+        // Clear chat history
+        this.ai.clearHistory();
+        const chatHistory = document.getElementById('chat-history');
+        chatHistory.innerHTML = `
+            <div class="flex gap-3">
+                <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 shadow-sm">
+                    <i class="fa-solid fa-robot text-xs text-white"></i>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 shadow-sm">
+                    Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts.
+                    What would you like to build today?
+                </div>
+            </div>
+        `;
+
+        // Clear preview
+        const iframe = document.getElementById('preview-frame');
+        iframe.srcdoc = '';
+
+        // Clear any attached image
+        this.removeImage();
+
+        // Reset undo button
+        this.updateUndoButton();
+
+        // Show welcome chips again
+        this.renderWelcomeScreen();
+
+        this.showNotification('Everything cleared', 'success');
+    }
+
     popoutPreview() {
         const code = this.editor.getValue();
         const mode = this.currentMode;
@@ -723,5 +801,107 @@ class UI {
         } else {
             this.showNotification('Pop-up blocked. Please allow pop-ups.', 'error');
         }
+    }
+
+    // Model Selection
+    renderModelList() {
+        const list = document.getElementById('model-list');
+        list.innerHTML = '';
+
+        CONFIG.MODELS.forEach(model => {
+            const isSelected = model.id === this.ai.getModel();
+            const card = document.createElement('div');
+            card.className = `p-3 rounded-lg cursor-pointer transition-all border ${isSelected ? 'bg-gray-100 border-gray-400' : 'bg-white border-gray-200 hover:bg-gray-50'}`;
+            card.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="font-medium text-gray-800">${model.name}</span>
+                        ${model.free ? '<span class="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">FREE</span>' : ''}
+                        ${model.vision ? '<span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium"><i class="fa-solid fa-eye"></i></span>' : ''}
+                    </div>
+                    ${isSelected ? '<i class="fa-solid fa-check text-gray-700"></i>' : ''}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">${model.provider} • ${model.description}</div>
+            `;
+
+            card.addEventListener('click', () => {
+                this.selectModel(model.id);
+            });
+
+            list.appendChild(card);
+        });
+    }
+
+    selectModel(modelId) {
+        this.ai.setModel(modelId);
+        this.updateModelDisplay();
+        this.renderModelList();
+        document.getElementById('model-modal').classList.add('hidden');
+
+        const modelInfo = this.ai.getModelInfo();
+        this.showNotification(`Switched to ${modelInfo.name}`, 'success');
+    }
+
+    updateModelDisplay() {
+        const modelInfo = this.ai.getModelInfo();
+        document.getElementById('current-model-name').textContent = modelInfo.name;
+
+        // Update image upload button visibility based on vision support
+        const imageLabel = document.getElementById('image-upload-label');
+        if (modelInfo.vision) {
+            imageLabel.classList.remove('opacity-50');
+            imageLabel.title = 'Attach image (vision enabled)';
+        } else {
+            imageLabel.classList.add('opacity-50');
+            imageLabel.title = 'Attach image (select a vision model first)';
+        }
+    }
+
+    // Image Upload
+    handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Check if current model supports vision
+        const modelInfo = this.ai.getModelInfo();
+        if (!modelInfo.vision) {
+            this.showNotification(`${modelInfo.name} doesn't support images. Select a vision model.`, 'error');
+            event.target.value = '';
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            this.showNotification('Please select an image file', 'error');
+            event.target.value = '';
+            return;
+        }
+
+        // Validate file size (max 20MB)
+        if (file.size > 20 * 1024 * 1024) {
+            this.showNotification('Image too large. Max size is 20MB.', 'error');
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.pendingImageDataUrl = e.target.result;
+            this.ai.setImage(this.pendingImageDataUrl);
+
+            // Show preview
+            document.getElementById('image-preview').src = this.pendingImageDataUrl;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+
+            this.showNotification('Image attached', 'success');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    removeImage() {
+        this.pendingImageDataUrl = null;
+        this.ai.clearImage();
+        document.getElementById('image-upload').value = '';
+        document.getElementById('image-preview-container').classList.add('hidden');
     }
 }

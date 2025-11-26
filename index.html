@@ -126,7 +126,12 @@
             style="width: 320px; min-width: 200px;">
             <div class="p-3 border-b border-gray-200 font-medium text-gray-700 flex justify-between items-center">
                 <span>AI Assistant</span>
-                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium">GPT-5.1</span>
+                <button id="model-selector-btn"
+                    class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-0.5 rounded font-medium flex items-center gap-1 transition-colors"
+                    title="Change Model">
+                    <span id="current-model-name">GPT-4.1</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
             </div>
 
             <!-- Chat History -->
@@ -140,6 +145,21 @@
                         Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts.
                         What would you like to build today?
                     </div>
+                </div>
+            </div>
+
+            <!-- Image Preview Area -->
+            <div id="image-preview-container" class="hidden px-4 py-2 bg-gray-50 border-t border-gray-200">
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <img id="image-preview" class="h-16 w-16 object-cover rounded border border-gray-300" src=""
+                            alt="Preview">
+                        <button id="remove-image-btn"
+                            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-500">Image attached</span>
                 </div>
             </div>
 
@@ -157,9 +177,16 @@
                 </div>
                 <div class="relative">
                     <textarea id="chat-input" rows="3"
-                        class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 pr-20 text-sm text-gray-800 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 resize-none scrollbar-thin"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 pr-24 text-sm text-gray-800 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 resize-none scrollbar-thin"
                         placeholder="Describe what you want to create..."></textarea>
                     <div class="absolute bottom-2 right-2 flex items-center gap-1">
+                        <!-- Image Upload Button -->
+                        <label id="image-upload-label"
+                            class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-gray-700 border border-gray-200 cursor-pointer"
+                            title="Attach image (for vision models)">
+                            <i class="fa-solid fa-image text-xs"></i>
+                            <input type="file" id="image-upload" accept="image/*" class="hidden">
+                        </label>
                         <button id="voice-btn"
                             class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-gray-700 border border-gray-200"
                             title="Voice input (click to speak)">
@@ -196,6 +223,10 @@
                     <button id="undo-ai-btn" class="text-gray-300 transition-colors flex items-center gap-1 text-xs"
                         title="Undo AI Change" disabled>
                         <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                    <button id="clear-all-btn" class="text-gray-500 hover:text-red-500 transition-colors"
+                        title="Clear Everything">
+                        <i class="fa-solid fa-trash-can"></i>
                     </button>
                     <button id="download-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
                         title="Download Code">
@@ -387,6 +418,20 @@
             </div>
             <div class="p-6 overflow-y-auto grid grid-cols-2 gap-4" id="templates-grid">
                 <!-- Templates injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Selector Modal -->
+    <div id="model-modal" class="fixed inset-0 bg-gray-900/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-[500px] max-h-[80vh] flex flex-col shadow-xl border border-gray-200">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-900">Select AI Model</h2>
+                <button id="close-model-btn" class="text-gray-500 hover:text-gray-800"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto" id="model-list">
+                <!-- Models injected by JS -->
             </div>
         </div>
     </div>
