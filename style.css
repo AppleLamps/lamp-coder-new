@@ -1,0 +1,71 @@
+/* Custom Scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280;
+}
+
+/* CodeMirror Overrides */
+.CodeMirror {
+    height: 100% !important;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message-enter {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Markdown Styles in Chat */
+.prose pre {
+    background-color: #1f2937;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.prose code {
+    background-color: #374151;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: monospace;
+    font-size: 0.875em;
+}
+
+.prose p {
+    margin-bottom: 0.5rem;
+}
+
+.prose ul {
+    list-style-type: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.prose ol {
+    list-style-type: decimal;
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}

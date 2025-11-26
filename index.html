@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Web Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden font-sans">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 h-14 flex items-center justify-between px-4 shrink-0 z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <i class="fa-solid fa-code text-white text-sm"></i>
+            </div>
+            <h1 class="font-bold text-lg tracking-tight">AI Web Studio</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button id="templates-btn" class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-layer-group"></i> Templates
+            </button>
+            <button id="settings-btn" class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-gear"></i> Settings
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Panel: Chat -->
+        <section class="w-80 flex flex-col border-r border-gray-700 bg-gray-800/50 shrink-0">
+            <div class="p-3 border-b border-gray-700 font-medium text-gray-300 flex justify-between items-center">
+                <span>AI Assistant</span>
+                <span class="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded">GPT-5.1</span>
+            </div>
+            
+            <!-- Chat History -->
+            <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg rounded-tl-none p-3 text-sm text-gray-200">
+                        Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts. What would you like to build today?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-gray-700 bg-gray-800">
+                <div class="flex gap-2 mb-2">
+                    <button class="mode-btn active text-xs px-2 py-1 rounded bg-blue-600 text-white" data-mode="html">HTML</button>
+                    <button class="mode-btn text-xs px-2 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600" data-mode="three">Three.js</button>
+                    <button class="mode-btn text-xs px-2 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600" data-mode="python">Python</button>
+                </div>
+                <div class="relative">
+                    <textarea id="chat-input" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 pr-10 text-sm focus:outline-none focus:border-blue-500 resize-none scrollbar-thin" placeholder="Describe what you want to create..."></textarea>
+                    <button id="send-btn" class="absolute bottom-2 right-2 w-8 h-8 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Middle Panel: Code Editor -->
+        <section class="flex-1 flex flex-col border-r border-gray-700 min-w-[300px]">
+            <div class="h-10 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-code text-gray-400 text-xs"></i>
+                    <span id="editor-title" class="text-sm font-medium text-gray-300">index.html</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="copy-btn" class="text-gray-400 hover:text-white transition-colors" title="Copy Code">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                    <button id="run-btn" class="text-green-400 hover:text-green-300 transition-colors flex items-center gap-1 text-sm font-medium">
+                        <i class="fa-solid fa-play"></i> Run
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 relative bg-[#282a36]">
+                <textarea id="code-editor" class="hidden"></textarea>
+            </div>
+        </section>
+
+        <!-- Right Panel: Preview -->
+        <section class="flex-1 flex flex-col min-w-[300px] bg-white">
+            <div class="h-10 bg-gray-100 border-b border-gray-300 flex items-center justify-between px-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-desktop text-gray-500 text-xs"></i>
+                    <span class="text-sm font-medium text-gray-600">Preview</span>
+                </div>
+                <div class="flex gap-2">
+                     <button id="refresh-preview-btn" class="text-gray-500 hover:text-gray-800 transition-colors">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button id="fullscreen-btn" class="text-gray-500 hover:text-gray-800 transition-colors">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 relative bg-white overflow-hidden">
+                <iframe id="preview-frame" class="w-full h-full border-0" sandbox="allow-scripts allow-modals allow-forms"></iframe>
+                <!-- Overlay for Python Output -->
+                <div id="python-output" class="absolute inset-0 bg-white p-4 overflow-auto hidden font-mono text-sm text-gray-800"></div>
+                <!-- Loading Overlay -->
+                <div id="preview-loading" class="absolute inset-0 bg-white/80 flex items-center justify-center hidden z-20">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-gray-600 text-sm font-medium">Processing...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg w-96 p-6 shadow-xl border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">Settings</h2>
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1">OpenRouter API Key</label>
+                <input type="password" id="api-key-input" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none" placeholder="sk-or-...">
+                <p class="text-xs text-gray-500 mt-1">Key is stored locally in your browser.</p>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button id="close-settings-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">Close</button>
+                <button id="save-settings-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm transition-colors">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templates-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg w-[600px] max-h-[80vh] flex flex-col shadow-xl border border-gray-700">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold">Templates</h2>
+                <button id="close-templates-btn" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto grid grid-cols-2 gap-4" id="templates-grid">
+                <!-- Templates injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- CodeMirror Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+
+    <!-- App Modules -->
+    <script src="js/config.js"></script>
+    <script src="js/templates.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/sandbox.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
