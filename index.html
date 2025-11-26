@@ -185,6 +185,18 @@
                     <span id="editor-title" class="text-sm font-medium text-gray-700">index.html</span>
                 </div>
                 <div class="flex items-center gap-3">
+                    <!-- Auto-Run Toggle -->
+                    <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none"
+                        title="Auto-run code 1s after typing stops">
+                        <input type="checkbox" id="autorun-toggle" class="w-3.5 h-3.5 accent-gray-900 cursor-pointer">
+                        <span>Auto</span>
+                    </label>
+                    <div class="w-px h-4 bg-gray-200"></div>
+                    <!-- Undo AI Button -->
+                    <button id="undo-ai-btn" class="text-gray-300 transition-colors flex items-center gap-1 text-xs"
+                        title="Undo AI Change" disabled>
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
                     <button id="download-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
                         title="Download Code">
                         <i class="fa-solid fa-download"></i>
@@ -209,15 +221,41 @@
         <!-- Right Panel: Preview -->
         <section id="preview-panel" class="flex-1 flex flex-col bg-white" style="min-width: 250px;">
             <div class="h-10 bg-white border-b border-gray-200 flex items-center justify-between px-4">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-desktop text-gray-500 text-xs"></i>
-                    <span class="text-sm font-medium text-gray-700">Preview</span>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-desktop text-gray-500 text-xs"></i>
+                        <span class="text-sm font-medium text-gray-700">Preview</span>
+                    </div>
+                    <!-- Device Size Buttons -->
+                    <div class="flex gap-1" id="device-buttons">
+                        <button
+                            class="device-btn px-2 py-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors text-xs"
+                            data-width="375px" title="Mobile (375px)">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                        </button>
+                        <button
+                            class="device-btn px-2 py-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors text-xs"
+                            data-width="768px" title="Tablet (768px)">
+                            <i class="fa-solid fa-tablet-screen-button"></i>
+                        </button>
+                        <button
+                            class="device-btn active px-2 py-1 text-gray-700 bg-gray-100 rounded transition-colors text-xs"
+                            data-width="100%" title="Desktop (100%)">
+                            <i class="fa-solid fa-desktop"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="refresh-preview-btn" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <button id="popout-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
+                        title="Open in New Tab">
+                        <i class="fa-solid fa-up-right-from-square"></i>
+                    </button>
+                    <button id="refresh-preview-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
+                        title="Refresh">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
-                    <button id="fullscreen-btn" class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <button id="fullscreen-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
+                        title="Fullscreen">
                         <i class="fa-solid fa-expand"></i>
                     </button>
                 </div>
@@ -227,8 +265,28 @@
                     <iframe id="preview-frame" class="w-full h-full border-0"
                         sandbox="allow-scripts allow-modals allow-forms allow-same-origin"></iframe>
                     <!-- Overlay for Python Output -->
-                    <div id="python-output"
-                        class="absolute inset-0 bg-white p-4 overflow-auto hidden font-mono text-sm text-gray-800">
+                    <div id="python-output-container" class="absolute inset-0 bg-white flex flex-col hidden">
+                        <div
+                            class="h-8 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-3 shrink-0">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-brands fa-python text-gray-500 text-xs"></i>
+                                <span class="text-xs font-medium text-gray-700">Python Output</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="download-plot-btn"
+                                    class="text-gray-400 hover:text-gray-800 text-xs transition-colors"
+                                    title="Download Last Plot" disabled>
+                                    <i class="fa-solid fa-image"></i>
+                                </button>
+                                <button id="clear-python-btn"
+                                    class="text-gray-500 hover:text-gray-800 text-xs transition-colors"
+                                    title="Clear Output">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="python-output" class="flex-1 p-4 overflow-auto font-mono text-sm text-gray-800">
+                        </div>
                     </div>
                     <!-- Loading Overlay -->
                     <div id="preview-loading"

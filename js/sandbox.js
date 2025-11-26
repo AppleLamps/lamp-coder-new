@@ -1,12 +1,14 @@
 class Sandbox {
     constructor(iframeId) {
         this.iframe = document.getElementById(iframeId);
+        this.pythonOutputContainer = document.getElementById('python-output-container');
         this.pythonOutput = document.getElementById('python-output');
         this.loadingOverlay = document.getElementById('preview-loading');
         this.jsConsolePanel = document.getElementById('js-console-panel');
         this.jsConsoleOutput = document.getElementById('js-console-output');
         this.pyodide = null;
         this.pyodideReady = false;
+        this.lastPlotData = null; // Store last plot for download
 
         // Listen for console messages from iframe
         window.addEventListener('message', (event) => this.handleConsoleMessage(event));
@@ -184,7 +186,7 @@ await micropip.install('${packageName}')
     }
 
     renderHTML(code) {
-        this.pythonOutput.classList.add('hidden');
+        this.pythonOutputContainer.classList.add('hidden');
         this.iframe.classList.remove('hidden');
         this.clearConsole();
 
@@ -208,7 +210,7 @@ await micropip.install('${packageName}')
     }
 
     renderThreeJS(code) {
-        this.pythonOutput.classList.add('hidden');
+        this.pythonOutputContainer.classList.add('hidden');
         this.iframe.classList.remove('hidden');
         this.clearConsole();
 
@@ -269,7 +271,7 @@ await micropip.install('${packageName}')
 
     async runPython(code) {
         this.iframe.classList.add('hidden');
-        this.pythonOutput.classList.remove('hidden');
+        this.pythonOutputContainer.classList.remove('hidden');
         this.pythonOutput.innerHTML = ''; // Clear previous output
 
         if (!this.pyodideReady) {
@@ -294,7 +296,7 @@ def show_plot():
     plt.savefig(buf, format='png')
     buf.seek(0)
     img_str = base64.b64encode(buf.read()).decode('utf-8')
-    plt.clf() 
+    plt.clf()
     return img_str
 
 # Monkey patch plt.show
@@ -309,10 +311,18 @@ plt.show = show_plot
 
             // Check if result is a base64 image (from plt.show)
             if (typeof result === 'string' && result.length > 100) { // Simple heuristic
-                const img = document.createElement('img');
-                img.src = 'data:image/png;base64,' + result;
-                img.style.maxWidth = '100%';
-                this.pythonOutput.appendChild(img);
+                this.lastPlotData = result; // Store for download
+                this.updateDownloadPlotButton(true);
+
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'relative inline-block group';
+                imgContainer.innerHTML = `
+                    <img src="data:image/png;base64,${result}" style="max-width: 100%;" class="rounded shadow-sm border border-gray-200">
+                    <button class="absolute top-2 right-2 bg-white/90 hover:bg-white px-2 py-1 rounded text-xs text-gray-600 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm border border-gray-200" onclick="window.sandbox.downloadPlotDirect('${result}')">
+                        <i class="fa-solid fa-download"></i> Save
+                    </button>
+                `;
+                this.pythonOutput.appendChild(imgContainer);
             } else if (result !== undefined) {
                 this.pythonOutput.innerHTML += `<div>Result: ${result}</div>`;
             }
@@ -320,5 +330,89 @@ plt.show = show_plot
         } catch (err) {
             this.pythonOutput.innerHTML += `<div style="color: red;">${err}</div>`;
         }
+    }
+
+    clearPythonOutput() {
+        this.pythonOutput.innerHTML = '';
+        this.lastPlotData = null;
+        this.updateDownloadPlotButton(false);
+    }
+
+    updateDownloadPlotButton(enabled) {
+        const btn = document.getElementById('download-plot-btn');
+        if (enabled) {
+            btn.disabled = false;
+            btn.classList.remove('text-gray-400');
+            btn.classList.add('text-gray-500');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('text-gray-400');
+            btn.classList.remove('text-gray-500');
+        }
+    }
+
+    downloadLastPlot() {
+        if (!this.lastPlotData) return;
+        this.downloadPlotDirect(this.lastPlotData);
+    }
+
+    downloadPlotDirect(base64Data) {
+        const link = document.createElement('a');
+        link.href = 'data:image/png;base64,' + base64Data;
+        link.download = 'plot.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Generate Three.js HTML for pop-out (used by UI)
+    generateThreeJSHTML(code) {
+        const sanitizedCode = code
+            .replace(/<\/script>/gi, '<\\/script>')
+            .replace(/<script/gi, '\\u003cscript')
+            .replace(/javascript:/gi, '');
+
+        return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Three.js Preview</title>
+    <style>body { margin: 0; overflow: hidden; }</style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <script>
+        try {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            camera.position.z = 5;
+
+            // User code
+            (function() {
+                ${sanitizedCode}
+            })();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        } catch (err) {
+            console.error(err);
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'color:red; padding:20px; font-family:monospace; white-space:pre-wrap;';
+            errorDiv.textContent = 'Error: ' + err.message + '\\n\\n' + err.stack;
+            document.body.appendChild(errorDiv);
+        }
+    </script>
+</body>
+</html>`;
     }
 }

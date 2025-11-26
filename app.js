@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const ai = new AI(editor);
     const sandbox = new Sandbox('preview-frame');
+    window.sandbox = sandbox; // Expose for Python plot download buttons
+
     const ui = new UI(ai, editor, sandbox);
     const resizer = new PanelResizer();
 

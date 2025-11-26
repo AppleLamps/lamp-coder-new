@@ -49,8 +49,23 @@ class UI {
             }
         };
 
+        // Auto-run settings
+        this.autoRunEnabled = false;
+        this.autoRunTimeout = null;
+
+        // Suggestion chips for empty chat
+        this.suggestionChips = [
+            { label: 'Login Page', prompt: 'Create a beautiful login page with form validation', mode: 'html' },
+            { label: 'Snake Game', prompt: 'Create a playable snake game', mode: 'html' },
+            { label: 'Data Chart', prompt: 'Create a bar chart showing monthly sales data', mode: 'html' },
+            { label: '3D Cube', prompt: 'Create a rotating 3D cube', mode: 'three' },
+            { label: 'Particle System', prompt: 'Create a colorful particle system', mode: 'three' },
+            { label: 'Data Plot', prompt: 'Create a sine wave plot with matplotlib', mode: 'python' }
+        ];
+
         this.initEventListeners();
         this.renderTemplates();
+        this.renderWelcomeScreen();
 
         // Check for API key
         if (!this.ai.getApiKey()) {
@@ -102,6 +117,29 @@ class UI {
         // Download
         document.getElementById('download-btn').addEventListener('click', () => {
             this.downloadCode();
+        });
+
+        // Auto-run toggle
+        document.getElementById('autorun-toggle').addEventListener('change', (e) => {
+            this.autoRunEnabled = e.target.checked;
+            if (this.autoRunEnabled) {
+                this.showNotification('Auto-run enabled', 'info');
+            }
+        });
+
+        // Link editor change to preview update (for auto-run)
+        this.editor.onCodeChange = () => {
+            if (this.autoRunEnabled && (this.currentMode === 'html' || this.currentMode === 'three')) {
+                if (this.autoRunTimeout) clearTimeout(this.autoRunTimeout);
+                this.autoRunTimeout = setTimeout(() => {
+                    this.sandbox.updatePreview(this.editor.getValue(), this.currentMode);
+                }, 1000); // 1 second delay
+            }
+        };
+
+        // Undo AI Change
+        document.getElementById('undo-ai-btn').addEventListener('click', () => {
+            this.undoAIChange();
         });
 
         // Settings
@@ -191,6 +229,55 @@ class UI {
                 });
             }
         });
+
+        // Device Size Buttons (Responsive Preview)
+        document.querySelectorAll('.device-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const width = e.currentTarget.dataset.width;
+                const iframe = document.getElementById('preview-frame');
+                const container = iframe.parentElement;
+
+                // Update active state
+                document.querySelectorAll('.device-btn').forEach(b => {
+                    b.classList.remove('active', 'text-gray-700', 'bg-gray-100');
+                    b.classList.add('text-gray-400');
+                });
+                e.currentTarget.classList.add('active', 'text-gray-700', 'bg-gray-100');
+                e.currentTarget.classList.remove('text-gray-400');
+
+                // Animate width change
+                iframe.style.transition = 'width 0.3s ease, margin 0.3s ease';
+                iframe.style.width = width;
+
+                // Center the mobile/tablet view with device frame styling
+                if (width !== '100%') {
+                    iframe.style.margin = '16px auto';
+                    iframe.style.border = '1px solid #e5e7eb';
+                    iframe.style.borderRadius = '8px';
+                    iframe.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
+                    iframe.style.height = 'calc(100% - 32px)';
+                } else {
+                    iframe.style.margin = '0';
+                    iframe.style.border = 'none';
+                    iframe.style.borderRadius = '0';
+                    iframe.style.boxShadow = 'none';
+                    iframe.style.height = '100%';
+                }
+            });
+        });
+
+        // Pop-out Preview Button
+        document.getElementById('popout-btn').addEventListener('click', () => {
+            this.popoutPreview();
+        });
+
+        // Python Output Controls
+        document.getElementById('clear-python-btn').addEventListener('click', () => {
+            this.sandbox.clearPythonOutput();
+        });
+        document.getElementById('download-plot-btn').addEventListener('click', () => {
+            this.sandbox.downloadLastPlot();
+        });
     }
 
     setMode(mode) {
@@ -227,16 +314,26 @@ class UI {
         const prompt = input.value.trim();
         if (!prompt) return;
 
+        // Remove welcome chips if present
+        const welcomeChips = document.getElementById('welcome-chips');
+        if (welcomeChips) welcomeChips.remove();
+
         input.value = '';
         this.appendMessage('user', prompt);
         this.setLoading(true);
 
         try {
+            // Save current state for undo before AI overwrites
+            this.editor.saveForUndo();
+
             const code = await this.ai.generateCode(prompt, this.currentMode);
             this.appendMessage('assistant', "I've generated the code for you. Check the editor!");
 
             this.editor.setValue(code);
             this.sandbox.updatePreview(code, this.currentMode);
+
+            // Update undo button state
+            this.updateUndoButton();
         } catch (error) {
             this.appendMessage('assistant', `Error: ${error.message}`);
         } finally {
@@ -525,5 +622,106 @@ class UI {
                 grid.appendChild(card);
             });
         });
+    }
+
+    renderWelcomeScreen() {
+        const history = document.getElementById('chat-history');
+        // Only show if chat is essentially empty (just the welcome message)
+        if (history.children.length <= 1) {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.id = 'welcome-chips';
+            welcomeDiv.className = 'flex flex-col items-center justify-center py-6 text-gray-400';
+            welcomeDiv.innerHTML = `
+                <i class="fa-solid fa-wand-magic-sparkles text-3xl mb-3 text-gray-300"></i>
+                <p class="mb-3 text-sm">Quick start ideas:</p>
+                <div class="flex flex-wrap justify-center gap-2 px-2">
+                    ${this.suggestionChips.map(c => `
+                        <button class="chip px-3 py-1.5 bg-white hover:bg-gray-100 rounded-full text-xs border border-gray-200 transition-colors text-gray-600 hover:text-gray-800 shadow-sm"
+                                data-prompt="${c.prompt}"
+                                data-mode="${c.mode}">
+                            ${c.label}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            history.appendChild(welcomeDiv);
+
+            // Add event listeners to chips
+            welcomeDiv.querySelectorAll('.chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const prompt = chip.dataset.prompt;
+                    const mode = chip.dataset.mode;
+
+                    // Switch to the appropriate mode
+                    this.setMode(mode);
+
+                    // Set the prompt in the input and submit
+                    document.getElementById('chat-input').value = prompt;
+                    this.handleChatSubmit();
+
+                    // Remove the welcome chips
+                    welcomeDiv.remove();
+                });
+            });
+        }
+    }
+
+    undoAIChange() {
+        const result = this.editor.undoAIChange();
+        if (result === false) {
+            this.showNotification('Nothing to undo', 'info');
+            return;
+        }
+
+        if (result === true) {
+            this.showNotification('Reverted last AI change', 'success');
+            this.sandbox.updatePreview(this.editor.getValue(), this.currentMode);
+        } else if (result && result.mode) {
+            // Need to switch mode
+            this.setMode(result.mode);
+            this.showNotification(`Reverted AI change (switched to ${result.mode})`, 'success');
+            this.sandbox.updatePreview(this.editor.getValue(), result.mode);
+        }
+
+        this.updateUndoButton();
+    }
+
+    updateUndoButton() {
+        const btn = document.getElementById('undo-ai-btn');
+        if (this.editor.canUndo()) {
+            btn.disabled = false;
+            btn.classList.remove('text-gray-300');
+            btn.classList.add('text-gray-500', 'hover:text-gray-800');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('text-gray-300');
+            btn.classList.remove('text-gray-500', 'hover:text-gray-800');
+        }
+    }
+
+    popoutPreview() {
+        const code = this.editor.getValue();
+        const mode = this.currentMode;
+
+        // Generate the HTML content
+        let content = '';
+        if (mode === 'html') {
+            content = code;
+        } else if (mode === 'three') {
+            content = this.sandbox.generateThreeJSHTML(code);
+        } else if (mode === 'python') {
+            this.showNotification('Python preview cannot be popped out', 'info');
+            return;
+        }
+
+        // Open in new tab
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+            newWindow.document.write(content);
+            newWindow.document.close();
+            this.showNotification('Preview opened in new tab', 'success');
+        } else {
+            this.showNotification('Pop-up blocked. Please allow pop-ups.', 'error');
+        }
     }
 }

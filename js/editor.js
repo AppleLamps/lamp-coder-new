@@ -35,10 +35,56 @@ class Editor {
 
         // Save content on change with debounce
         this.saveTimeout = null;
+
+        // Callback for code changes (used by UI for auto-run)
+        this.onCodeChange = null;
+
+        // Undo history for AI changes
+        this.undoStack = [];
+        this.maxUndoSize = 10;
+
         this.cm.on('change', () => {
             this.buffers[this.currentMode] = this.cm.getValue();
             this.debouncedSave();
+
+            // Trigger generic event for UI to handle auto-run
+            if (this.onCodeChange) this.onCodeChange();
         });
+    }
+
+    // Save current state before AI overwrites (for undo functionality)
+    saveForUndo() {
+        const currentContent = this.cm.getValue();
+        if (currentContent.trim()) {
+            this.undoStack.push({
+                mode: this.currentMode,
+                content: currentContent
+            });
+            // Keep only the last N entries
+            if (this.undoStack.length > this.maxUndoSize) {
+                this.undoStack.shift();
+            }
+        }
+    }
+
+    // Undo last AI change
+    undoAIChange() {
+        if (this.undoStack.length === 0) return false;
+
+        const lastState = this.undoStack.pop();
+        if (lastState.mode === this.currentMode) {
+            this.cm.setValue(lastState.content);
+            this.buffers[this.currentMode] = lastState.content;
+            return true;
+        } else {
+            // If mode is different, restore and switch mode
+            this.buffers[lastState.mode] = lastState.content;
+            return { mode: lastState.mode };
+        }
+    }
+
+    canUndo() {
+        return this.undoStack.length > 0;
     }
 
     // Load buffers from localStorage
