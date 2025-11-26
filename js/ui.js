@@ -76,6 +76,9 @@ class UI {
         if (!this.ai.getApiKey()) {
             document.getElementById('settings-modal').classList.remove('hidden');
         }
+
+        // Make UI globally accessible for retry status updates
+        window.ui = this;
     }
 
     initEventListeners() {
@@ -167,6 +170,19 @@ class UI {
         // Undo AI Change
         document.getElementById('undo-ai-btn').addEventListener('click', () => {
             this.undoAIChange();
+        });
+
+        // Format Code Button
+        document.getElementById('format-btn').addEventListener('click', () => {
+            this.formatCode();
+        });
+
+        // Diff Accept/Reject Buttons
+        document.getElementById('accept-diff-btn').addEventListener('click', () => {
+            this.acceptDiff();
+        });
+        document.getElementById('reject-diff-btn').addEventListener('click', () => {
+            this.rejectDiff();
         });
 
         // Settings
@@ -364,36 +380,40 @@ class UI {
             // Save current state for undo before AI overwrites
             this.editor.saveForUndo();
 
-            let isFirstChunk = true;
-            let lastPreviewUpdate = 0;
-            const previewThrottle = 500; // Update preview every 500ms during streaming
+            // Store original code BEFORE any changes
+            const originalCode = this.editor.getValue();
 
-            // Streaming callback - updates editor live as code comes in
+            let isFirstChunk = true;
+            let streamedCode = '';
+
+            // Streaming callback - just collect code, don't update editor during streaming
             const onChunk = (chunk, fullContent) => {
                 if (isFirstChunk) {
                     this.setLoading(true, 'Generating code...');
                     isFirstChunk = false;
                 }
 
-                // Try to extract code from partial JSON for live preview
+                // Try to extract code from partial JSON for progress tracking
                 const partialCode = this.extractPartialCode(fullContent);
                 if (partialCode) {
-                    this.editor.setValue(partialCode);
-
-                    // Throttle preview updates during streaming
-                    const now = Date.now();
-                    if (now - lastPreviewUpdate > previewThrottle) {
-                        this.sandbox.updatePreview(partialCode, this.currentMode);
-                        lastPreviewUpdate = now;
-                    }
+                    streamedCode = partialCode;
                 }
             };
 
             const code = await this.ai.generateCode(prompt, this.currentMode, onChunk);
-            this.appendMessage('assistant', "I've generated the code for you. Check the editor!");
 
-            this.editor.setValue(code);
-            this.sandbox.updatePreview(code, this.currentMode);
+            // Check if there's existing code to compare against
+            if (originalCode.trim()) {
+                // Show diff view with Accept/Reject buttons
+                this.appendMessage('assistant', "I've generated new code. Review the changes below and click Accept or Reject.");
+                this.editor.showDiff(originalCode, code);
+                this.showDiffActions(true);
+            } else {
+                // No existing code, just set it directly
+                this.appendMessage('assistant', "I've generated the code for you. Check the editor!");
+                this.editor.setValue(code);
+                this.sandbox.updatePreview(code, this.currentMode);
+            }
 
             // Update undo button state
             this.updateUndoButton();
@@ -465,30 +485,45 @@ class UI {
     appendMessage(role, content) {
         const history = document.getElementById('chat-history');
         const div = document.createElement('div');
-        div.className = 'flex gap-3 message-enter';
-
-        const icon = role === 'user' ? 'fa-user' : 'fa-robot';
-        const bg = role === 'user' ? 'bg-gray-600' : 'bg-gray-800';
-
-        div.innerHTML = `
-            <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center shrink-0 shadow-sm">
-                <i class="fa-solid ${icon} text-xs text-white"></i>
-            </div>
-            <div class="bg-white border border-gray-200 rounded-lg ${role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'} p-3 text-sm text-gray-700 prose max-w-none shadow-sm">
-                ${content}
-            </div>
-        `;
+        
+        if (role === 'user') {
+            // User message: right-aligned
+            div.className = 'flex gap-3 justify-end message-enter';
+            div.innerHTML = `
+                <div class="bg-blue-500 text-white rounded-lg rounded-tl-none p-3 text-sm prose max-w-none shadow-sm max-w-[80%]">
+                    ${content}
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center shrink-0 shadow-sm order-first">
+                    <i class="fa-solid fa-user text-xs text-white"></i>
+                </div>
+            `;
+        } else {
+            // Bot message: left-aligned (original layout)
+            div.className = 'flex gap-3 message-enter';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 shadow-sm">
+                    <i class="fa-solid fa-robot text-xs text-white"></i>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 prose max-w-none shadow-sm max-w-[80%]">
+                    ${content}
+                </div>
+            `;
+        }
 
         history.appendChild(div);
         history.scrollTop = history.scrollHeight;
     }
 
-    setLoading(loading, statusMessage = null) {
+    setLoading(loading, statusMessage = null, isRetry = false) {
         const btn = document.getElementById('send-btn');
         const statusEl = document.getElementById('streaming-status');
 
         if (loading) {
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            if (isRetry) {
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Retrying...';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            }
             btn.disabled = true;
 
             // Show status message if provided
@@ -506,6 +541,29 @@ class UI {
             if (statusEl) {
                 statusEl.classList.add('hidden');
             }
+        }
+    }
+
+    // Show retry status with countdown
+    showRetryStatus(attempt, maxAttempts, delay) {
+        const statusEl = document.getElementById('streaming-status');
+        if (statusEl) {
+            const seconds = Math.ceil(delay / 1000);
+            statusEl.querySelector('span').textContent = `Rate limited. Retrying (${attempt}/${maxAttempts}) in ${seconds}s...`;
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('text-yellow-600');
+            
+            // Add countdown
+            let remainingSeconds = seconds;
+            const countdownInterval = setInterval(() => {
+                remainingSeconds--;
+                if (remainingSeconds > 0) {
+                    statusEl.querySelector('span').textContent = `Rate limited. Retrying (${attempt}/${maxAttempts}) in ${remainingSeconds}s...`;
+                } else {
+                    clearInterval(countdownInterval);
+                    statusEl.classList.remove('text-yellow-600');
+                }
+            }, 1000);
         }
     }
 
@@ -1001,5 +1059,64 @@ class UI {
         this.ai.clearImage();
         document.getElementById('image-upload').value = '';
         document.getElementById('image-preview-container').classList.add('hidden');
+    }
+
+    // Format code using Prettier
+    async formatCode() {
+        if (this.editor.isInDiffMode()) {
+            this.showNotification('Cannot format while in diff view', 'error');
+            return;
+        }
+
+        try {
+            const result = await this.editor.formatCode();
+            if (result) {
+                this.showNotification('Code formatted successfully', 'success');
+            }
+        } catch (error) {
+            this.showNotification(`Format error: ${error.message}`, 'error');
+        }
+    }
+
+    // Show/hide diff action buttons
+    showDiffActions(show) {
+        const diffActions = document.getElementById('diff-actions');
+        const runBtn = document.getElementById('run-btn');
+        const formatBtn = document.getElementById('format-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+
+        if (show) {
+            diffActions.classList.remove('hidden');
+            diffActions.classList.add('flex');
+            // Hide regular buttons while in diff mode
+            runBtn.classList.add('hidden');
+            formatBtn.classList.add('hidden');
+            copyBtn.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+        } else {
+            diffActions.classList.add('hidden');
+            diffActions.classList.remove('flex');
+            // Show regular buttons
+            runBtn.classList.remove('hidden');
+            formatBtn.classList.remove('hidden');
+            copyBtn.classList.remove('hidden');
+            downloadBtn.classList.remove('hidden');
+        }
+    }
+
+    // Accept the AI-generated code
+    acceptDiff() {
+        const finalCode = this.editor.hideDiff(true);
+        this.showDiffActions(false);
+        this.sandbox.updatePreview(finalCode, this.currentMode);
+        this.showNotification('Changes accepted', 'success');
+    }
+
+    // Reject the AI-generated code
+    rejectDiff() {
+        this.editor.hideDiff(false);
+        this.showDiffActions(false);
+        this.showNotification('Changes rejected', 'info');
     }
 }

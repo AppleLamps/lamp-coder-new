@@ -128,6 +128,54 @@
     color: #374151;
 }
 
+/* Chat Message Styling Enhancements */
+/* User message specific styles */
+.flex.justify-end .prose p {
+    color: #ffffff;
+}
+
+.flex.justify-end .prose ul {
+    color: #ffffff;
+}
+
+.flex.justify-end .prose ol {
+    color: #ffffff;
+}
+
+.flex.justify-end .prose pre {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.flex.justify-end .prose code {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* Bot message hover effects */
+.flex.gap-3:not(.justify-end) .bg-white:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* User message hover effects */
+.flex.justify-end .bg-blue-500:hover {
+    background-color: #3b82f6;
+    transition: background-color 0.2s ease;
+}
+
+/* Message spacing improvements */
+#chat-history > div {
+    margin-bottom: 1rem;
+}
+
+#chat-history > div:last-child {
+    margin-bottom: 0;
+}
+
 /* Panel Resizers - Light Theme */
 .resizer {
     width: 6px;
@@ -168,6 +216,7 @@
 body.resizing {
     cursor: col-resize !important;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 body.resizing * {
@@ -176,4 +225,107 @@ body.resizing * {
 
 body.resizing iframe {
     pointer-events: none;
+}
+
+/* CodeMirror Fold Gutter */
+.CodeMirror-foldgutter {
+    width: 1.2em;
+}
+
+.CodeMirror-foldgutter-open,
+.CodeMirror-foldgutter-folded {
+    cursor: pointer;
+    color: #9ca3af;
+}
+
+.CodeMirror-foldgutter-open:hover,
+.CodeMirror-foldgutter-folded:hover {
+    color: #374151;
+}
+
+.CodeMirror-foldgutter-open::after {
+    content: "▼";
+    font-size: 0.7em;
+}
+
+.CodeMirror-foldgutter-folded::after {
+    content: "▶";
+    font-size: 0.7em;
+}
+
+/* CodeMirror Autocomplete Hints */
+.CodeMirror-hints {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px 0;
+    z-index: 100;
+}
+
+.CodeMirror-hint {
+    padding: 4px 12px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.CodeMirror-hint-active {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+/* CodeMirror Merge View */
+.CodeMirror-merge {
+    height: 100% !important;
+}
+
+.CodeMirror-merge-pane {
+    height: 100% !important;
+}
+
+.CodeMirror-merge-gap {
+    background: #f3f4f6;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.CodeMirror-merge-r-chunk {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.CodeMirror-merge-r-chunk-start {
+    border-top: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.CodeMirror-merge-r-chunk-end {
+    border-bottom: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.CodeMirror-merge-l-deleted {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.CodeMirror-merge-r-inserted {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.CodeMirror-merge-copybuttons-left,
+.CodeMirror-merge-copybuttons-right {
+    width: 20px;
+}
+
+#merge-view-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#merge-view-container .CodeMirror {
+    height: 100% !important;
 }

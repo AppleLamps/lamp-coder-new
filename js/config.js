@@ -50,5 +50,17 @@ CRITICAL RULES:
 
 For Three.js: scene, camera, renderer, controls are pre-configured. Just add objects to scene.
 For Python: Use plt.show() for plots, print() for text output.`,
-    STORAGE_KEY_API_KEY: 'ai_web_studio_api_key'
+    STORAGE_KEY_API_KEY: 'ai_web_studio_api_key',
+
+    // API Retry Configuration
+    RETRY_CONFIG: {
+        maxRetries: 3,
+        baseDelay: 1000, // 1 second
+        maxDelay: 30000, // 30 seconds
+        backoffMultiplier: 2,
+        jitter: true,
+        retryableErrors: [429, 500, 502, 503, 504],
+        networkErrorRetry: true,
+        timeoutMs: 60000 // 60 seconds
+    }
 };

@@ -1,6 +1,8 @@
 class Editor {
     constructor(textareaId) {
         this.textarea = document.getElementById(textareaId);
+        this.editorContainer = this.textarea.parentElement;
+
         this.cm = CodeMirror.fromTextArea(this.textarea, {
             lineNumbers: true,
             theme: 'default',
@@ -13,6 +15,9 @@ class Editor {
             matchBrackets: true,
             scrollbarStyle: 'native',
             viewportMargin: Infinity,
+            // Code folding
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
             extraKeys: {
                 "Ctrl-Space": "autocomplete",
                 "Ctrl-Z": "undo",
@@ -20,8 +25,15 @@ class Editor {
             }
         });
 
+        // Setup autocomplete triggers
+        this.setupAutocomplete();
+
         this.currentMode = 'html';
         this.storageKey = 'ai-web-studio-buffers';
+
+        // Diff view state
+        this.mergeView = null;
+        this.isDiffMode = false;
 
         // Load buffers from localStorage or use empty defaults
         this.buffers = this.loadFromStorage() || {
@@ -158,5 +170,181 @@ class Editor {
 
     refresh() {
         this.cm.refresh();
+    }
+
+    // Setup autocomplete triggers for different modes
+    setupAutocomplete() {
+        this.cm.on('inputRead', (cm, change) => {
+            if (change.origin !== '+input') return;
+
+            const cursor = cm.getCursor();
+            const token = cm.getTokenAt(cursor);
+            const mode = cm.getMode().name;
+            const char = change.text[0];
+
+            // Auto-trigger conditions
+            let shouldTrigger = false;
+
+            if (mode === 'xml' || mode === 'htmlmixed') {
+                // Trigger on < for HTML tags
+                if (char === '<') shouldTrigger = true;
+                // Trigger on space inside a tag for attributes
+                if (char === ' ' && token.state && token.state.htmlState &&
+                    token.state.htmlState.tagName) shouldTrigger = true;
+            }
+
+            if (mode === 'javascript' || (mode === 'htmlmixed' && token.state && token.state.localMode && token.state.localMode.name === 'javascript')) {
+                // Trigger on . for property access
+                if (char === '.') shouldTrigger = true;
+            }
+
+            if (mode === 'css' || (mode === 'htmlmixed' && token.state && token.state.localMode && token.state.localMode.name === 'css')) {
+                // Trigger on : for CSS values
+                if (char === ':') shouldTrigger = true;
+            }
+
+            if (shouldTrigger) {
+                setTimeout(() => {
+                    if (!cm.state.completionActive) {
+                        cm.showHint({ completeSingle: false });
+                    }
+                }, 100);
+            }
+        });
+    }
+
+    // Format code using Prettier
+    async formatCode() {
+        const code = this.cm.getValue();
+        if (!code.trim()) return;
+
+        // Check if prettier is available
+        if (typeof prettier === 'undefined') {
+            console.error('Prettier is not loaded');
+            return;
+        }
+
+        try {
+            let parser;
+            let plugins = [];
+
+            // Determine parser based on current mode
+            switch (this.currentMode) {
+                case 'html':
+                    parser = 'html';
+                    plugins = [prettierPlugins.html];
+                    break;
+                case 'three':
+                    parser = 'babel';
+                    plugins = [prettierPlugins.babel, prettierPlugins.estree];
+                    break;
+                case 'python':
+                    // Prettier doesn't support Python
+                    console.warn('Prettier does not support Python formatting');
+                    return;
+                default:
+                    parser = 'html';
+                    plugins = [prettierPlugins.html];
+            }
+
+            const formatted = await prettier.format(code, {
+                parser: parser,
+                plugins: plugins,
+                tabWidth: 4,
+                useTabs: false,
+                printWidth: 100,
+                singleQuote: true
+            });
+
+            this.cm.setValue(formatted);
+            return true;
+        } catch (error) {
+            console.error('Formatting error:', error);
+            throw error;
+        }
+    }
+
+    // Show diff view comparing original code with new code
+    showDiff(originalCode, newCode) {
+        // Hide the standard editor
+        this.cm.getWrapperElement().style.display = 'none';
+        this.isDiffMode = true;
+
+        // Create container for merge view if it doesn't exist
+        let mergeContainer = document.getElementById('merge-view-container');
+        if (!mergeContainer) {
+            mergeContainer = document.createElement('div');
+            mergeContainer.id = 'merge-view-container';
+            mergeContainer.style.height = '100%';
+            mergeContainer.style.width = '100%';
+            this.editorContainer.appendChild(mergeContainer);
+        }
+        mergeContainer.innerHTML = '';
+        mergeContainer.style.display = 'block';
+
+        // Determine CodeMirror mode based on current mode
+        let cmMode = 'htmlmixed';
+        if (this.currentMode === 'three') cmMode = 'javascript';
+        else if (this.currentMode === 'python') cmMode = 'python';
+
+        // Create merge view
+        this.mergeView = CodeMirror.MergeView(mergeContainer, {
+            value: newCode,
+            orig: originalCode,
+            lineNumbers: true,
+            mode: cmMode,
+            highlightDifferences: true,
+            connect: 'align',
+            collapseIdentical: false,
+            theme: 'default',
+            readOnly: false,
+            revertButtons: true
+        });
+
+        // Store the new code for accept action
+        this.pendingNewCode = newCode;
+        this.pendingOriginalCode = originalCode;
+
+        return this.mergeView;
+    }
+
+    // Hide diff view and restore standard editor
+    hideDiff(applyChanges = false) {
+        if (!this.isDiffMode) return;
+
+        // Get the final code from merge view if applying changes
+        let finalCode;
+        if (applyChanges && this.mergeView) {
+            finalCode = this.mergeView.editor().getValue();
+        } else {
+            finalCode = this.pendingOriginalCode;
+        }
+
+        // Remove merge view container
+        const mergeContainer = document.getElementById('merge-view-container');
+        if (mergeContainer) {
+            mergeContainer.innerHTML = '';
+            mergeContainer.style.display = 'none';
+        }
+
+        // Show the standard editor
+        this.cm.getWrapperElement().style.display = '';
+        this.isDiffMode = false;
+        this.mergeView = null;
+
+        // Set the final code
+        if (finalCode !== undefined) {
+            this.cm.setValue(finalCode);
+            this.buffers[this.currentMode] = finalCode;
+        }
+
+        this.cm.refresh();
+
+        return finalCode;
+    }
+
+    // Check if currently in diff mode
+    isInDiffMode() {
+        return this.isDiffMode;
     }
 }

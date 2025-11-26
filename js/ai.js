@@ -10,6 +10,12 @@ class AI {
         // Pending image for next message
         this.pendingImage = null;
 
+        // Request queue and rate limiting
+        this.requestQueue = [];
+        this.isProcessingRequest = false;
+        this.lastRequestTime = 0;
+        this.minRequestInterval = 1000; // 1 second between requests minimum
+
         // JSON Schema for structured code generation
         this.codeResponseSchema = {
             type: "json_schema",
@@ -125,6 +131,58 @@ class AI {
             throw new Error(`${modelInfo.name} doesn't support images. Please select a vision-capable model.`);
         }
 
+        // Create request object for queuing
+        const request = {
+            userPrompt,
+            currentMode,
+            onChunk,
+            timestamp: Date.now()
+        };
+
+        // Queue the request and wait for processing
+        return new Promise((resolve, reject) => {
+            this.requestQueue.push({ request, resolve, reject });
+            this.processQueue();
+        });
+    }
+
+    // Process the request queue with rate limiting
+    async processQueue() {
+        if (this.isProcessingRequest || this.requestQueue.length === 0) {
+            return;
+        }
+
+        this.isProcessingRequest = true;
+
+        // Rate limiting: ensure minimum interval between requests
+        const now = Date.now();
+        const timeSinceLastRequest = now - this.lastRequestTime;
+        if (timeSinceLastRequest < this.minRequestInterval) {
+            const waitTime = this.minRequestInterval - timeSinceLastRequest;
+            await this.sleep(waitTime);
+        }
+
+        const { request, resolve, reject } = this.requestQueue.shift();
+        this.lastRequestTime = Date.now();
+
+        try {
+            const result = await this.executeRequest(request);
+            resolve(result);
+        } catch (error) {
+            reject(error);
+        } finally {
+            this.isProcessingRequest = false;
+            // Process next request in queue
+            if (this.requestQueue.length > 0) {
+                setTimeout(() => this.processQueue(), 100);
+            }
+        }
+    }
+
+    // Execute a single request from the queue
+    async executeRequest(request) {
+        const { userPrompt, currentMode, onChunk } = request;
+
         const currentCode = this.editor?.getValue ? this.editor.getValue() : '';
         const declaredIdentifiers = currentCode ? this.extractDeclaredIdentifiers(currentCode) : [];
 
@@ -160,6 +218,107 @@ class AI {
         // Clear the pending image after building the message
         this.clearImage();
 
+        // Use the robust API client with retry logic
+        const fullContent = await this.makeAPIRequestWithRetry({
+            model: this.currentModel,
+            messages: messages,
+            response_format: this.codeResponseSchema,
+            stream: true
+        }, onChunk);
+
+        // Parse the structured JSON response
+        const parsedResponse = this.parseStructuredResponse(fullContent);
+
+        // Add assistant response to history (just the code for brevity)
+        this.addToHistory('assistant', `Generated code with changes: ${parsedResponse.changes_made.join(', ')}`);
+
+        // Log the thinking and changes for debugging
+        console.log('AI Thinking:', parsedResponse.thinking);
+        console.log('Changes Made:', parsedResponse.changes_made);
+        console.log('Preserved:', parsedResponse.preserved_elements);
+
+        return parsedResponse.code;
+    }
+
+    // Calculate delay with exponential backoff and jitter
+    calculateDelay(attempt, config) {
+        let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1);
+        delay = Math.min(delay, config.maxDelay);
+        
+        // Add jitter to prevent thundering herd
+        if (config.jitter) {
+            delay = delay * (0.5 + Math.random() * 0.5);
+        }
+        
+        return Math.floor(delay);
+    }
+
+    // Check if an error is retryable
+    isRetryableError(error, statusCode) {
+        const config = CONFIG.RETRY_CONFIG;
+        
+        // Check for network errors
+        if (error.name === 'TypeError' || error.message.includes('network') || 
+            error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+            return config.networkErrorRetry;
+        }
+        
+        // Check for HTTP status codes that should be retried
+        if (statusCode && config.retryableErrors.includes(statusCode)) {
+            return true;
+        }
+        
+        // Check for timeout errors
+        if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    // Make API request with comprehensive retry logic
+    async makeAPIRequestWithRetry(requestBody, onChunk, retryCount = 0) {
+        const config = CONFIG.RETRY_CONFIG;
+        
+        try {
+            return await this.makeSingleAPIRequest(requestBody, onChunk);
+        } catch (error) {
+            const statusCode = error.status;
+            
+            // Don't retry if we've exceeded max attempts or error is not retryable
+            if (retryCount >= config.maxRetries || !this.isRetryableError(error, statusCode)) {
+                throw error;
+            }
+            
+            // Calculate delay and wait
+            const delay = this.calculateDelay(retryCount + 1, config);
+            console.log(`API request failed (attempt ${retryCount + 1}/${config.maxRetries}), retrying in ${delay}ms...`, error.message);
+            
+            // Notify UI about retry if callback is available
+            if (window.ui && window.ui.showRetryStatus) {
+                window.ui.showRetryStatus(retryCount + 1, config.maxRetries, delay);
+            }
+            
+            // Update loading state to show retry
+            if (window.ui && window.ui.setLoading) {
+                window.ui.setLoading(true, `Rate limited. Retrying in ${Math.ceil(delay/1000)}s...`, true);
+            }
+            
+            await this.sleep(delay);
+            
+            // Recursive retry
+            return this.makeAPIRequestWithRetry(requestBody, onChunk, retryCount + 1);
+        }
+    }
+
+    // Make a single API request with timeout
+    async makeSingleAPIRequest(requestBody, onChunk) {
+        const config = CONFIG.RETRY_CONFIG;
+        
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
+        
         try {
             const response = await fetch(CONFIG.API_URL, {
                 method: 'POST',
@@ -169,39 +328,44 @@ class AI {
                     'HTTP-Referer': window.location.origin,
                     'X-Title': 'AI Web Studio'
                 },
-                body: JSON.stringify({
-                    model: this.currentModel,
-                    messages: messages,
-                    response_format: this.codeResponseSchema,
-                    stream: true
-                })
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'API request failed');
+                let errorMessage = 'API request failed';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error?.message || errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                
+                const error = new Error(errorMessage);
+                error.status = response.status;
+                throw error;
             }
 
             // Handle streaming response
-            const fullContent = await this.handleStreamingResponse(response, onChunk);
-
-            // Parse the structured JSON response
-            const parsedResponse = this.parseStructuredResponse(fullContent);
-
-            // Add assistant response to history (just the code for brevity)
-            this.addToHistory('assistant', `Generated code with changes: ${parsedResponse.changes_made.join(', ')}`);
-
-            // Log the thinking and changes for debugging
-            console.log('AI Thinking:', parsedResponse.thinking);
-            console.log('Changes Made:', parsedResponse.changes_made);
-            console.log('Preserved:', parsedResponse.preserved_elements);
-
-            return parsedResponse.code;
+            return await this.handleStreamingResponse(response, onChunk);
 
         } catch (error) {
-            console.error('AI Generation Error:', error);
+            clearTimeout(timeoutId);
+            
+            // Add status code if available
+            if (error.name === 'AbortError') {
+                error.message = 'Request timeout - please try again';
+            }
+            
             throw error;
         }
+    }
+
+    // Utility function for sleeping
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     async handleStreamingResponse(response, onChunk) {
