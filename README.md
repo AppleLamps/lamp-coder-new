@@ -10,23 +10,24 @@ A sophisticated AI-powered web development environment that allows you to genera
   - **Three.js**: Create interactive 3D scenes and particle systems.
   - **Python**: Run Python scripts in the browser using Pyodide (WebAssembly), with support for NumPy and Matplotlib.
 - **Secure Sandbox**: Real-time preview in an isolated iframe.
-- **Code Editor**: Professional editor with syntax highlighting (Dracula theme).
+- **Code Editor**: Professional editor with syntax highlighting.
 - **Templates**: Quick-start templates for landing pages, games, data visualization, and more.
+- **Clean Light Theme**: Professional light theme with white backgrounds and black accents for a minimalist, modern appearance.
 
 ## Setup
 
-1.  Clone this repository or download the files.
-2.  Open `index.html` in a modern web browser (Chrome, Edge, Firefox).
-3.  Click the **Settings** button in the top right corner.
-4.  Enter your **OpenRouter API Key**.
+1. Clone this repository or download the files.
+2. Open `index.html` in a modern web browser (Chrome, Edge, Firefox).
+3. Click the **Settings** button in the top right corner.
+4. Enter your **OpenRouter API Key**.
     - The key is stored locally in your browser's LocalStorage.
 
 ## Usage
 
-1.  **Select a Mode**: Choose between HTML, Three.js, or Python using the buttons above the chat input.
-2.  **Describe your idea**: Type a request like "Create a login form" or "Show a 3D rotating earth".
-3.  **Generate**: The AI will generate the code and automatically render it in the preview panel.
-4.  **Edit**: You can manually tweak the code in the editor and click **Run** to update the preview.
+1. **Select a Mode**: Choose between HTML, Three.js, or Python using the buttons above the chat input.
+2. **Describe your idea**: Type a request like "Create a login form" or "Show a 3D rotating earth".
+3. **Generate**: The AI will generate the code and automatically render it in the preview panel.
+4. **Edit**: You can manually tweak the code in the editor and click **Run** to update the preview.
 
 ## Technologies
 
