@@ -3,7 +3,7 @@ class Editor {
         this.textarea = document.getElementById(textareaId);
         this.cm = CodeMirror.fromTextArea(this.textarea, {
             lineNumbers: true,
-            theme: 'dracula',
+            theme: 'default',
             mode: 'htmlmixed',
             indentUnit: 4,
             tabSize: 4,

@@ -14,7 +14,6 @@
 
     <!-- CodeMirror CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -26,93 +25,94 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
-<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden font-sans">
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden font-sans">
 
     <!-- Header -->
-    <header class="bg-gray-800 border-b border-gray-700 h-14 flex items-center justify-between px-4 shrink-0 z-10">
+    <header
+        class="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 shrink-0 z-10 shadow-sm">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <div class="w-8 h-8 rounded bg-gray-900 flex items-center justify-center shadow-sm">
                 <i class="fa-solid fa-code text-white text-sm"></i>
             </div>
-            <h1 class="font-bold text-lg tracking-tight">AI Web Studio</h1>
+            <h1 class="font-bold text-lg tracking-tight text-gray-900">AI Web Studio</h1>
         </div>
 
         <div class="flex items-center gap-3">
             <!-- Library Picker Dropdown -->
             <div class="relative" id="library-picker-container">
                 <button id="library-picker-btn"
-                    class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                    class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-200 transition-colors flex items-center gap-2">
                     <i class="fa-solid fa-puzzle-piece"></i> Libraries <i class="fa-solid fa-chevron-down text-xs"></i>
                 </button>
                 <div id="library-picker-dropdown"
-                    class="absolute top-full right-0 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 hidden">
-                    <div class="p-2 border-b border-gray-700">
-                        <span class="text-xs text-gray-400 uppercase">Insert Library CDN</span>
+                    class="absolute top-full right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                    <div class="p-2 border-b border-gray-100">
+                        <span class="text-xs text-gray-500 uppercase font-medium">Insert Library CDN</span>
                     </div>
                     <div class="max-h-64 overflow-y-auto">
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="bootstrap">
-                            <i class="fa-brands fa-bootstrap text-purple-400"></i> Bootstrap 5
+                            <i class="fa-brands fa-bootstrap text-purple-500"></i> Bootstrap 5
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="tailwind">
-                            <i class="fa-solid fa-wind text-cyan-400"></i> Tailwind CSS
+                            <i class="fa-solid fa-wind text-cyan-500"></i> Tailwind CSS
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="jquery">
-                            <i class="fa-solid fa-code text-blue-400"></i> jQuery
+                            <i class="fa-solid fa-code text-gray-700"></i> jQuery
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="vue">
-                            <i class="fa-brands fa-vuejs text-green-400"></i> Vue.js 3
+                            <i class="fa-brands fa-vuejs text-green-500"></i> Vue.js 3
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="react">
-                            <i class="fa-brands fa-react text-cyan-400"></i> React + ReactDOM
+                            <i class="fa-brands fa-react text-cyan-500"></i> React + ReactDOM
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="p5">
-                            <i class="fa-solid fa-paintbrush text-pink-400"></i> p5.js
+                            <i class="fa-solid fa-paintbrush text-pink-500"></i> p5.js
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="anime">
-                            <i class="fa-solid fa-wand-magic-sparkles text-orange-400"></i> Anime.js
+                            <i class="fa-solid fa-wand-magic-sparkles text-orange-500"></i> Anime.js
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="gsap">
-                            <i class="fa-solid fa-film text-green-400"></i> GSAP
+                            <i class="fa-solid fa-film text-green-500"></i> GSAP
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="chartjs">
-                            <i class="fa-solid fa-chart-line text-yellow-400"></i> Chart.js
+                            <i class="fa-solid fa-chart-line text-yellow-500"></i> Chart.js
                         </button>
                         <button
-                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-700 flex items-center gap-2 text-sm"
+                            class="library-item w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700"
                             data-library="aframe">
-                            <i class="fa-solid fa-vr-cardboard text-red-400"></i> A-Frame (VR)
+                            <i class="fa-solid fa-vr-cardboard text-red-500"></i> A-Frame (VR)
                         </button>
                     </div>
                 </div>
             </div>
             <button id="packages-btn"
-                class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-200 transition-colors flex items-center gap-2">
                 <i class="fa-brands fa-python"></i> Packages
             </button>
             <button id="templates-btn"
-                class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-200 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-layer-group"></i> Templates
             </button>
             <button id="settings-btn"
-                class="px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 rounded transition-colors flex items-center gap-2">
+                class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded border border-gray-200 transition-colors flex items-center gap-2">
                 <i class="fa-solid fa-gear"></i> Settings
             </button>
         </div>
@@ -122,20 +122,21 @@
     <main class="flex-1 flex overflow-hidden">
 
         <!-- Left Panel: Chat -->
-        <section id="chat-panel" class="flex flex-col border-r border-gray-700 bg-gray-800/50"
+        <section id="chat-panel" class="flex flex-col border-r border-gray-200 bg-white"
             style="width: 320px; min-width: 200px;">
-            <div class="p-3 border-b border-gray-700 font-medium text-gray-300 flex justify-between items-center">
+            <div class="p-3 border-b border-gray-200 font-medium text-gray-700 flex justify-between items-center">
                 <span>AI Assistant</span>
-                <span class="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded">GPT-5.1</span>
+                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium">GPT-5.1</span>
             </div>
 
             <!-- Chat History -->
-            <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+            <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin bg-gray-50">
                 <div class="flex gap-3">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-robot text-xs"></i>
+                    <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shrink-0 shadow-sm">
+                        <i class="fa-solid fa-robot text-xs text-white"></i>
                     </div>
-                    <div class="bg-gray-700 rounded-lg rounded-tl-none p-3 text-sm text-gray-200">
+                    <div
+                        class="bg-white border border-gray-200 rounded-lg rounded-tl-none p-3 text-sm text-gray-700 shadow-sm">
                         Hello! I'm your AI coding assistant. I can generate HTML, Three.js scenes, and Python scripts.
                         What would you like to build today?
                     </div>
@@ -143,27 +144,29 @@
             </div>
 
             <!-- Chat Input -->
-            <div class="p-4 border-t border-gray-700 bg-gray-800">
+            <div class="p-4 border-t border-gray-200 bg-white">
                 <div class="flex gap-2 mb-2">
-                    <button class="mode-btn active text-xs px-2 py-1 rounded bg-blue-600 text-white"
+                    <button class="mode-btn active text-xs px-2 py-1 rounded bg-gray-900 text-white"
                         data-mode="html">HTML</button>
-                    <button class="mode-btn text-xs px-2 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    <button
+                        class="mode-btn text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200"
                         data-mode="three">Three.js</button>
-                    <button class="mode-btn text-xs px-2 py-1 rounded bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    <button
+                        class="mode-btn text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200"
                         data-mode="python">Python</button>
                 </div>
                 <div class="relative">
                     <textarea id="chat-input" rows="3"
-                        class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 pr-20 text-sm focus:outline-none focus:border-blue-500 resize-none scrollbar-thin"
+                        class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 pr-20 text-sm text-gray-800 focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 resize-none scrollbar-thin"
                         placeholder="Describe what you want to create..."></textarea>
                     <div class="absolute bottom-2 right-2 flex items-center gap-1">
                         <button id="voice-btn"
-                            class="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors text-gray-400 hover:text-white"
+                            class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors text-gray-500 hover:text-gray-700 border border-gray-200"
                             title="Voice input (click to speak)">
                             <i class="fa-solid fa-microphone text-xs"></i>
                         </button>
                         <button id="send-btn"
-                            class="w-8 h-8 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center transition-colors">
+                            class="w-8 h-8 bg-gray-900 hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors text-white shadow-sm">
                             <i class="fa-solid fa-paper-plane text-xs"></i>
                         </button>
                     </div>
@@ -175,27 +178,27 @@
         <div class="resizer" id="resizer-left"></div>
 
         <!-- Middle Panel: Code Editor -->
-        <section id="editor-panel" class="flex-1 flex flex-col border-r border-gray-700" style="min-width: 250px;">
-            <div class="h-10 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
+        <section id="editor-panel" class="flex-1 flex flex-col border-r border-gray-200" style="min-width: 250px;">
+            <div class="h-10 bg-white border-b border-gray-200 flex items-center justify-between px-4">
                 <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-code text-gray-400 text-xs"></i>
-                    <span id="editor-title" class="text-sm font-medium text-gray-300">index.html</span>
+                    <i class="fa-solid fa-code text-gray-500 text-xs"></i>
+                    <span id="editor-title" class="text-sm font-medium text-gray-700">index.html</span>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button id="download-btn" class="text-gray-400 hover:text-white transition-colors"
+                    <button id="download-btn" class="text-gray-500 hover:text-gray-800 transition-colors"
                         title="Download Code">
                         <i class="fa-solid fa-download"></i>
                     </button>
-                    <button id="copy-btn" class="text-gray-400 hover:text-white transition-colors" title="Copy Code">
+                    <button id="copy-btn" class="text-gray-500 hover:text-gray-800 transition-colors" title="Copy Code">
                         <i class="fa-regular fa-copy"></i>
                     </button>
                     <button id="run-btn"
-                        class="text-green-400 hover:text-green-300 transition-colors flex items-center gap-1 text-sm font-medium">
+                        class="text-green-600 hover:text-green-700 transition-colors flex items-center gap-1 text-sm font-medium">
                         <i class="fa-solid fa-play"></i> Run
                     </button>
                 </div>
             </div>
-            <div class="flex-1 relative bg-[#282a36]">
+            <div class="flex-1 relative bg-white">
                 <textarea id="code-editor" class="hidden"></textarea>
             </div>
         </section>
@@ -205,10 +208,10 @@
 
         <!-- Right Panel: Preview -->
         <section id="preview-panel" class="flex-1 flex flex-col bg-white" style="min-width: 250px;">
-            <div class="h-10 bg-gray-100 border-b border-gray-300 flex items-center justify-between px-4">
+            <div class="h-10 bg-white border-b border-gray-200 flex items-center justify-between px-4">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-desktop text-gray-500 text-xs"></i>
-                    <span class="text-sm font-medium text-gray-600">Preview</span>
+                    <span class="text-sm font-medium text-gray-700">Preview</span>
                 </div>
                 <div class="flex gap-2">
                     <button id="refresh-preview-btn" class="text-gray-500 hover:text-gray-800 transition-colors">
@@ -229,34 +232,36 @@
                     </div>
                     <!-- Loading Overlay -->
                     <div id="preview-loading"
-                        class="absolute inset-0 bg-white/80 flex items-center justify-center hidden z-20">
+                        class="absolute inset-0 bg-white/90 flex items-center justify-center hidden z-20">
                         <div class="flex flex-col items-center gap-3">
                             <div
-                                class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin">
+                                class="w-8 h-8 border-4 border-gray-800 border-t-transparent rounded-full animate-spin">
                             </div>
                             <span class="text-gray-600 text-sm font-medium">Processing...</span>
                         </div>
                     </div>
                 </div>
                 <!-- JavaScript Console Panel -->
-                <div id="js-console-panel" class="h-32 bg-gray-900 border-t border-gray-700 flex flex-col hidden">
-                    <div class="h-8 bg-gray-800 flex items-center justify-between px-3 shrink-0">
+                <div id="js-console-panel" class="h-32 bg-gray-100 border-t border-gray-200 flex flex-col hidden">
+                    <div
+                        class="h-8 bg-gray-50 border-b border-gray-200 flex items-center justify-between px-3 shrink-0">
                         <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-terminal text-gray-400 text-xs"></i>
-                            <span class="text-xs font-medium text-gray-300">Console</span>
+                            <i class="fa-solid fa-terminal text-gray-500 text-xs"></i>
+                            <span class="text-xs font-medium text-gray-700">Console</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button id="clear-console-btn" class="text-gray-400 hover:text-white text-xs"
+                            <button id="clear-console-btn" class="text-gray-500 hover:text-gray-800 text-xs"
                                 title="Clear Console">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
-                            <button id="toggle-console-btn" class="text-gray-400 hover:text-white text-xs"
+                            <button id="toggle-console-btn" class="text-gray-500 hover:text-gray-800 text-xs"
                                 title="Close Console">
                                 <i class="fa-solid fa-chevron-down"></i>
                             </button>
                         </div>
                     </div>
-                    <div id="js-console-output" class="flex-1 overflow-auto p-2 font-mono text-xs space-y-1"></div>
+                    <div id="js-console-output"
+                        class="flex-1 overflow-auto p-2 font-mono text-xs space-y-1 bg-white text-gray-800"></div>
                 </div>
             </div>
         </section>
@@ -264,48 +269,49 @@
     </main>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg w-96 p-6 shadow-xl border border-gray-700">
-            <h2 class="text-xl font-bold mb-4">Settings</h2>
+    <div id="settings-modal" class="fixed inset-0 bg-gray-900/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-96 p-6 shadow-xl border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 text-gray-900">Settings</h2>
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-1">OpenRouter API Key</label>
+                <label class="block text-sm text-gray-600 mb-1 font-medium">OpenRouter API Key</label>
                 <input type="password" id="api-key-input"
-                    class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none"
+                    class="w-full bg-gray-50 border border-gray-300 rounded p-2 text-sm text-gray-800 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none"
                     placeholder="sk-or-...">
                 <p class="text-xs text-gray-500 mt-1">Key is stored locally in your browser.</p>
             </div>
             <div class="flex justify-end gap-2">
                 <button id="close-settings-btn"
-                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">Close</button>
+                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm transition-colors border border-gray-200">Close</button>
                 <button id="save-settings-btn"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm transition-colors">Save</button>
+                    class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded text-sm transition-colors">Save</button>
             </div>
         </div>
     </div>
 
     <!-- Python Packages Modal -->
-    <div id="packages-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg w-96 p-6 shadow-xl border border-gray-700">
+    <div id="packages-modal" class="fixed inset-0 bg-gray-900/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-96 p-6 shadow-xl border border-gray-200">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Python Packages</h2>
-                <button id="close-packages-btn" class="text-gray-400 hover:text-white"><i
+                <h2 class="text-xl font-bold text-gray-900">Python Packages</h2>
+                <button id="close-packages-btn" class="text-gray-500 hover:text-gray-800"><i
                         class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-1">Install Package</label>
+                <label class="block text-sm text-gray-600 mb-1 font-medium">Install Package</label>
                 <div class="flex gap-2">
                     <input type="text" id="package-name-input"
-                        class="flex-1 bg-gray-900 border border-gray-600 rounded p-2 text-sm focus:border-blue-500 outline-none"
+                        class="flex-1 bg-gray-50 border border-gray-300 rounded p-2 text-sm text-gray-800 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none"
                         placeholder="e.g., pandas, scipy, sympy">
                     <button id="install-package-btn"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm transition-colors flex items-center gap-2">
+                        class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded text-sm transition-colors flex items-center gap-2">
                         <i class="fa-solid fa-download"></i> Install
                     </button>
                 </div>
             </div>
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-2">Installed Packages</label>
-                <div id="installed-packages" class="bg-gray-900 rounded p-3 max-h-40 overflow-auto text-sm">
+                <label class="block text-sm text-gray-600 mb-2 font-medium">Installed Packages</label>
+                <div id="installed-packages"
+                    class="bg-gray-50 border border-gray-200 rounded p-3 max-h-40 overflow-auto text-sm">
                     <div class="text-gray-500 text-xs">numpy, matplotlib (default)</div>
                 </div>
             </div>
@@ -314,11 +320,11 @@
     </div>
 
     <!-- Templates Modal -->
-    <div id="templates-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-gray-800 rounded-lg w-[600px] max-h-[80vh] flex flex-col shadow-xl border border-gray-700">
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold">Templates</h2>
-                <button id="close-templates-btn" class="text-gray-400 hover:text-white"><i
+    <div id="templates-modal" class="fixed inset-0 bg-gray-900/30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg w-[600px] max-h-[80vh] flex flex-col shadow-xl border border-gray-200">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-gray-900">Templates</h2>
+                <button id="close-templates-btn" class="text-gray-500 hover:text-gray-800"><i
                         class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 overflow-y-auto grid grid-cols-2 gap-4" id="templates-grid">

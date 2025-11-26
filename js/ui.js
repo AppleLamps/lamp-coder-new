@@ -196,14 +196,14 @@ class UI {
     setMode(mode) {
         this.currentMode = mode;
 
-        // Update UI buttons
+        // Update UI buttons - Light theme colors with black accents
         document.querySelectorAll('.mode-btn').forEach(btn => {
             if (btn.dataset.mode === mode) {
-                btn.classList.add('active', 'bg-blue-600', 'text-white');
-                btn.classList.remove('bg-gray-700', 'text-gray-300');
+                btn.classList.add('active', 'bg-gray-900', 'text-white');
+                btn.classList.remove('bg-gray-100', 'text-gray-600', 'border', 'border-gray-200');
             } else {
-                btn.classList.remove('active', 'bg-blue-600', 'text-white');
-                btn.classList.add('bg-gray-700', 'text-gray-300');
+                btn.classList.remove('active', 'bg-gray-900', 'text-white');
+                btn.classList.add('bg-gray-100', 'text-gray-600', 'border', 'border-gray-200');
             }
         });
 
@@ -250,13 +250,13 @@ class UI {
         div.className = 'flex gap-3 message-enter';
 
         const icon = role === 'user' ? 'fa-user' : 'fa-robot';
-        const bg = role === 'user' ? 'bg-gray-600' : 'bg-blue-600';
+        const bg = role === 'user' ? 'bg-gray-600' : 'bg-gray-800';
 
         div.innerHTML = `
-            <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center shrink-0">
-                <i class="fa-solid ${icon} text-xs"></i>
+            <div class="w-8 h-8 rounded-full ${bg} flex items-center justify-center shrink-0 shadow-sm">
+                <i class="fa-solid ${icon} text-xs text-white"></i>
             </div>
-            <div class="bg-gray-700 rounded-lg ${role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'} p-3 text-sm text-gray-200 prose prose-invert max-w-none">
+            <div class="bg-white border border-gray-200 rounded-lg ${role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'} p-3 text-sm text-gray-700 prose max-w-none shadow-sm">
                 ${content}
             </div>
         `;
@@ -279,8 +279,8 @@ class UI {
     showNotification(message, type = 'info') {
         const colors = {
             'error': 'bg-red-500',
-            'success': 'bg-green-500',
-            'info': 'bg-blue-500'
+            'success': 'bg-green-600',
+            'info': 'bg-gray-800'
         };
 
         const notification = document.createElement('div');
@@ -338,7 +338,7 @@ class UI {
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Installing...';
         btn.disabled = true;
         status.classList.remove('hidden');
-        status.className = 'text-sm text-blue-400';
+        status.className = 'text-sm text-gray-600';
         status.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Installing ${packageName}...`;
 
         const result = await this.sandbox.installPackage(packageName);
@@ -369,7 +369,7 @@ class UI {
         const packages = this.sandbox.getInstalledPackages();
 
         container.innerHTML = packages.map(pkg =>
-            `<span class="inline-block bg-gray-800 px-2 py-1 rounded text-xs mr-1 mb-1">${pkg}</span>`
+            `<span class="inline-block bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs mr-1 mb-1">${pkg}</span>`
         ).join('');
     }
 
@@ -473,8 +473,8 @@ class UI {
             this.isRecording = true;
 
             const btn = document.getElementById('voice-btn');
-            btn.classList.remove('bg-gray-700', 'text-gray-400');
-            btn.classList.add('bg-red-600', 'text-white', 'animate-pulse');
+            btn.classList.remove('bg-gray-100', 'text-gray-500', 'border-gray-200');
+            btn.classList.add('bg-red-500', 'text-white', 'animate-pulse', 'border-red-500');
             btn.title = 'Click to stop recording';
 
             this.showNotification('Listening... Speak your prompt', 'info');
@@ -491,8 +491,8 @@ class UI {
         this.isRecording = false;
 
         const btn = document.getElementById('voice-btn');
-        btn.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
-        btn.classList.add('bg-gray-700', 'text-gray-400');
+        btn.classList.remove('bg-red-500', 'text-white', 'animate-pulse', 'border-red-500');
+        btn.classList.add('bg-gray-100', 'text-gray-500', 'border-gray-200');
         btn.title = 'Voice input (click to speak)';
     }
 
@@ -503,16 +503,16 @@ class UI {
         Object.entries(TEMPLATES).forEach(([type, templates]) => {
             templates.forEach(template => {
                 const card = document.createElement('div');
-                card.className = 'bg-gray-700 p-4 rounded hover:bg-gray-600 cursor-pointer transition-colors border border-gray-600';
+                card.className = 'bg-gray-50 p-4 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200 shadow-sm';
                 card.innerHTML = `
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-blue-400">
+                        <div class="w-8 h-8 rounded bg-white flex items-center justify-center text-gray-700 border border-gray-200 shadow-sm">
                             <i class="${template.icon}"></i>
                         </div>
-                        <h3 class="font-bold text-gray-200">${template.name}</h3>
+                        <h3 class="font-bold text-gray-800">${template.name}</h3>
                     </div>
-                    <p class="text-xs text-gray-400 mb-2">${template.description}</p>
-                    <span class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-500 uppercase">${type}</span>
+                    <p class="text-xs text-gray-500 mb-2">${template.description}</p>
+                    <span class="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600 uppercase font-medium">${type}</span>
                 `;
 
                 card.addEventListener('click', () => {

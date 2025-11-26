@@ -1,28 +1,39 @@
-/* Custom Scrollbar */
+/* Custom Scrollbar - Light Theme */
 .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+    background: #f3f4f6;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #4b5563;
+    background-color: #d1d5db;
     border-radius: 3px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #6b7280;
+    background-color: #9ca3af;
 }
 
-/* CodeMirror Overrides */
+/* CodeMirror Overrides - Light Theme */
 .CodeMirror {
     height: 100% !important;
     font-family: 'Fira Code', 'Consolas', monospace;
     font-size: 14px;
     line-height: 1.5;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+
+.CodeMirror-gutters {
+    background-color: #f9fafb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.CodeMirror-linenumber {
+    color: #9ca3af;
 }
 
 /* Animations */
@@ -42,45 +53,52 @@
     animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Markdown Styles in Chat */
+/* Markdown Styles in Chat - Light Theme */
 .prose pre {
-    background-color: #1f2937;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
     padding: 0.5rem;
     border-radius: 0.375rem;
     overflow-x: auto;
     font-size: 0.875rem;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
+    color: #1f2937;
 }
 
 .prose code {
-    background-color: #374151;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-family: monospace;
     font-size: 0.875em;
+    color: #1f2937;
 }
 
 .prose p {
     margin-bottom: 0.5rem;
+    color: #374151;
 }
 
 .prose ul {
     list-style-type: disc;
     padding-left: 1.25rem;
     margin-bottom: 0.5rem;
+    color: #374151;
 }
 
 .prose ol {
     list-style-type: decimal;
     padding-left: 1.25rem;
     margin-bottom: 0.5rem;
+    color: #374151;
 }
 
-/* Panel Resizers */
+/* Panel Resizers - Light Theme */
 .resizer {
     width: 6px;
-    background: #374151;
+    background: #e5e7eb;
     cursor: col-resize;
     position: relative;
     z-index: 10;
@@ -90,7 +108,7 @@
 
 .resizer:hover,
 .resizer.active {
-    background: #3b82f6;
+    background: #1f2937;
 }
 
 .resizer::after {
@@ -101,7 +119,7 @@
     transform: translate(-50%, -50%);
     width: 2px;
     height: 30px;
-    background: #6b7280;
+    background: #9ca3af;
     border-radius: 1px;
     opacity: 0;
     transition: opacity 0.15s ease;
@@ -110,7 +128,7 @@
 .resizer:hover::after,
 .resizer.active::after {
     opacity: 1;
-    background: white;
+    background: #ffffff;
 }
 
 /* Prevent text selection while resizing */
